@@ -1,0 +1,179 @@
+<article class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 transition-all duration-300 hover:shadow-md hover:border-gray-200">
+  <div class="flex flex-col md:flex-row gap-6">
+    <!-- Contenu principal -->
+    <div class="flex-1">
+      <!-- En-tête avec catégorie et statut -->
+      <div class="flex flex-wrap items-center gap-3 mb-4">
+        <span class="text-xs bg-gradient-to-r from-blue-500 to-purple-600 text-white px-3 py-1.5 rounded-full font-medium shadow-sm">
+          {{ article.category.name }}
+        </span>
+        {% if article.is_trending %}
+        <span class="text-xs bg-red-100 text-red-600 px-3 py-1.5 rounded-full font-medium flex items-center gap-1">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+          </svg>
+          Tendance
+        </span>
+        {% endif %}
+        <span class="text-xs text-gray-500 ml-auto">{{ article.published_at|date:"j M Y" }}</span>
+      </div>
+
+      <!-- Titre et extrait -->
+      <h3 class="text-xl font-bold text-gray-800 mb-3 hover:text-blue-600 transition-colors duration-300 cursor-pointer"
+          x-data="{ expanded: false }"
+          @click="expanded = !expanded">
+        <a href="{% url 'article_detail' article.slug %}">{{ article.title }}</a>
+      </h3>
+
+      <p class="text-gray-600 mb-4 leading-relaxed" x-show="!expanded">{{ article.excerpt }}</p>
+
+      <!-- Contenu complet (masqué par défaut) -->
+      <div class="mb-4" x-show="expanded" x-transition>
+        <div class="p-4 bg-gray-50 rounded-xl border border-gray-200">
+          <p class="text-gray-700 leading-relaxed">
+            {{ article.content|truncatewords:100|default:"Contenu complet de l'article à venir..." }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Bouton Lire la suite -->
+      <div class="flex justify-between items-center mb-4" x-data="{ expanded: false }">
+        <button @click="expanded = !expanded"
+                class="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium transition-colors duration-300 group">
+          <span x-text="expanded ? 'Voir moins' : 'Lire la suite'"></span>
+          <svg xmlns="http://www.w3.org/2000/svg"
+               class="h-4 w-4 transition-transform duration-300 group-hover:translate-y-0.5"
+               :class="{ 'rotate-180': expanded }"
+               fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+          {{ article.read_time }} min de lecture
+        </span>
+      </div>
+
+      <!-- Informations auteur et actions -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-4 border-t border-gray-100">
+        <!-- Auteur -->
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            {% if article.author.profile.avatar %}
+              <img src="{{ article.author.profile.avatar.url }}"
+                   class="w-10 h-10 rounded-full border-2 border-white shadow-sm"
+                   alt="{{ article.author.get_full_name|default:article.author.username }}" />
+            {% else %}
+              <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                {{ article.author.get_full_name|default:article.author.username|slice:":1"|upper }}
+              </div>
+            {% endif %}
+            <!-- Indicateur en ligne -->
+            <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+          </div>
+          <div>
+            <div class="font-semibold text-gray-800">{{ article.author.get_full_name|default:article.author.username }}</div>
+            <div class="text-xs text-gray-500">{{ article.author.profile.role|default:"Membre" }}</div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-4 text-gray-500" x-data="{
+          likes: {{ article.likes_count }},
+          isLiked: false,
+          comments: {{ article.comments_count }},
+          isBookmarked: false
+        }">
+          <!-- Like -->
+          <button @click="isLiked = !isLiked; likes += isLiked ? 1 : -1"
+                  class="flex items-center gap-1.5 group transition-all duration-300"
+                  :class="isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 class="h-5 w-5 transition-transform duration-300 group-hover:scale-110"
+                 :class="{ 'fill-current': isLiked }"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+            <span class="text-sm font-medium" x-text="likes"></span>
+          </button>
+
+          <!-- Comment -->
+          <a href="{% url 'article_detail' article.slug %}#comments"
+             class="flex items-center gap-1.5 group transition-all duration-300 hover:text-blue-600">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 class="h-5 w-5 transition-transform duration-300 group-hover:scale-110"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            <span class="text-sm font-medium" x-text="comments"></span>
+          </a>
+
+          <!-- Share -->
+          <button class="group transition-all duration-300 hover:text-green-600"
+                  @click="navigator.share ? navigator.share({
+                    title: '{{ article.title }}',
+                    text: '{{ article.excerpt }}',
+                    url: window.location.origin + '{% url 'article_detail' article.slug %}'
+                  }) : navigator.clipboard.writeText(window.location.origin + '{% url 'article_detail' article.slug %}').then(() => alert('Lien copié!'))">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 class="h-5 w-5 transition-transform duration-300 group-hover:scale-110"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+          </button>
+
+          <!-- Bookmark -->
+          <button @click="isBookmarked = !isBookmarked"
+                  class="group transition-all duration-300"
+                  :class="isBookmarked ? 'text-purple-600' : 'text-gray-500 hover:text-purple-600'">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 class="h-5 w-5 transition-transform duration-300 group-hover:scale-110"
+                 :class="{ 'fill-current': isBookmarked }"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tags -->
+      {% if article.tags.all %}
+      <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
+        {% for tag in article.tags.all %}
+        <span class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full border border-gray-200 hover:bg-gray-200 transition-colors duration-300 cursor-pointer">
+          #{{ tag.name }}
+        </span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Image de couverture -->
+    {% if article.cover %}
+    <div class="md:w-48 flex-shrink-0">
+      <div class="relative overflow-hidden rounded-xl shadow-sm">
+        <img src="{{ article.cover.url }}"
+             alt="{{ article.title }}"
+             class="w-full h-40 md:h-32 object-cover transition-transform duration-500 hover:scale-105" />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</article>
+
+<!-- Styles additionnels pour les transitions -->
+<style>
+  [x-cloak] { display: none !important; }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>

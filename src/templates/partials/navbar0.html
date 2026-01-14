@@ -1,0 +1,94 @@
+<nav
+  x-data="authNavbar()"
+  x-init="checkAuth()"
+  class="fixed top-0 left-0 w-full z-50 backdrop-blur-lg bg-white/90 border-b border-gray-200/50 shadow-sm"
+>
+
+<!-- CONTAINER -->
+<div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+
+  <!-- LOGO -->
+  <a href="/" class="flex items-center gap-3 group">
+    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-md">
+      TI
+    </div>
+    <span class="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+      TechInnoventia
+    </span>
+  </a>
+
+  <!-- DESKTOP BAR -->
+  <div class="hidden lg:flex items-center gap-6">
+
+    <!-- SEARCH -->
+    <input placeholder="Rechercher..."
+      class="w-72 px-4 py-2.5 rounded-xl bg-gray-100 border border-gray-200
+      focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"/>
+
+    <!-- CREATE BUTTON -->
+    <a x-show="isAuth" href="#"
+      class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-5 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg transition">
+      + Créer un post
+    </a>
+  </div>
+
+
+  <!-- RIGHT USER -->
+  <div class="hidden lg:flex items-center gap-3">
+
+    <!-- GUEST -->
+    <template x-if="!isAuth">
+      <div class="flex gap-3">
+        <a href="/login/" class="font-medium text-gray-700 hover:text-blue-600">
+          Connexion
+        </a>
+
+        <a href="/register/"
+          class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-5 py-2.5 rounded-xl font-medium">
+          Inscription
+        </a>
+      </div>
+    </template>
+
+
+    <!-- AUTHENTICATED -->
+    <template x-if="isAuth">
+      <div class="relative" x-data="{open:false}">
+        <div @click="open=!open"
+             class="flex gap-2 items-center cursor-pointer hover:bg-gray-100 px-3 py-1 rounded-xl">
+
+          <img x-show="user.avatar"
+               :src="user.avatar"
+               class="w-9 h-9 rounded-full"/>
+
+          <div x-show="!user.avatar"
+               class="w-9 h-9 bg-gradient-to-r from-blue-500 to-purple-600
+               text-white flex items-center justify-center rounded-full font-bold">
+            <span x-text="user.username[0].toUpperCase()"></span>
+          </div>
+
+          <span class="font-medium text-gray-700" x-text="user.username"></span>
+        </div>
+
+        <!-- DROPDOWN -->
+        <div x-show="open"
+            @click.outside="open=false"
+            class="absolute right-0 w-56 mt-2 bg-white shadow-xl rounded-xl border z-40">
+
+          <a href="#"
+             class="block px-4 py-3 hover:bg-blue-50">
+             Mon profil
+          </a>
+
+          <button @click="logout"
+            class="w-full text-left px-4 py-3 hover:bg-red-50 text-red-600">
+            Déconnexion
+          </button>
+        </div>
+      </div>
+    </template>
+
+  </div>
+
+</div>
+</nav>

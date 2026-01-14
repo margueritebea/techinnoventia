@@ -1,0 +1,250 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+    <!-- ===== META TECHNIQUES ===== -->
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- ===== SEO PRINCIPAL ===== -->
+    <title>{% block title %}TechInnoventia - Programmation, Tech & Math{% endblock %}</title>
+    <meta name="description" content="{% block description %}Actualités tech, articles sur la programmation, mathématiques, tutoriels et communauté développeurs.{% endblock %}">
+    <meta name="keywords" content="Programmation, Tech, Math, IA, Actualité, Python, Django, Développement web">
+    <meta name="author" content="TechInnoventia">
+
+    <!-- ===== SEO EXTRA ===== -->
+    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+
+    <!-- ===== OPEN GRAPH ===== -->
+    <meta property="og:title" content="{% block og_title %}TechInnoventia{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Actualités, programmation, tech, math, communauté développeurs.{% endblock %}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:image" content="{% block og_image %}{% static 'img/og-default.jpg' %}{% endblock %}">
+    <meta property="og:locale" content="fr_FR">
+
+    <!-- ===== TWITTER CARD ===== -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}TechInnoventia{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}Programmation, tech, math et communauté.{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}{% static 'img/og-default.jpg' %}{% endblock %}">
+
+    <!-- ===== FAVICON ===== -->
+    <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
+
+    <!-- ===== CSS ===== -->
+    <link href="{% static 'css/base.css' %}" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- ===== BLOCKS CSS SUPPLÉMENTAIRES ===== -->
+    {% block extra_css %}{% endblock %}
+</head>
+
+<!-- <body class="min-h-screen flex flex-col bg-base-200"> -->
+<body class="bg-gray-50 text-gray-800">
+    <!-- ================= NAVBAR ================= -->
+    {% include 'partials/navbar0.html' %}
+
+    <!-- ================= ALERTES DJANGO ================= -->
+    <div class="container mx-auto mt-4">
+        {% if messages %}
+        <div class="space-y-2">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} shadow">
+                <span>{{ message }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ================= CONTENU PRINCIPAL ================= -->
+    <main class="flex-grow container mx-auto px-4 py-6">
+        {% block content %}
+
+        {% endblock %}
+    </main>
+
+    <!-- ================= FOOTER ================= -->
+    <footer class="footer footer-center p-4 bg-base-300 text-base-content mt-10">
+        <aside>
+            <p>© {{ now.year }} TechInnoventia - Tous droits réservés</p>
+        </aside>
+    </footer>
+
+    <!-- ================= SCRIPTS ================= -->
+    <script>
+        // Exemple : protection CSRF pour requêtes AJAX
+        const csrftoken = "{{ csrf_token }}";
+    </script>
+
+    <!-- Scripts personnalisés -->
+    {% block extra_js %}{% endblock %}
+    
+    <!-- Dans base0.html, ajoutez ce script -->
+<script>
+// Gestionnaire d'authentification global
+document.addEventListener('alpine:init', () => {
+    Alpine.data('auth', () => ({
+        user: null,
+        token: null,
+        loading: false,
+
+        init() {
+            // Vérifier l'authentification au chargement
+            this.checkAuth();
+
+            // Récupérer le token du localStorage
+            this.token = localStorage.getItem('auth_token');
+        },
+
+        async checkAuth() {
+            try {
+                const response = await fetch('/users/api/check-auth/');
+                const data = await response.json();
+
+                if (data.authenticated) {
+                    this.user = data.user;
+                    window.user = data.user; // Disponible globalement
+                }
+            } catch (error) {
+                console.error('Erreur de vérification auth:', error);
+            }
+        },
+
+        async login(formData) {
+            this.loading = true;
+
+            try {
+                const response = await fetch('/users/api/login/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    this.user = data.user;
+                    this.token = data.token;
+
+                    // Stocker le token
+                    localStorage.setItem('auth_token', data.token);
+
+                    // Redirection ou message de succès
+                    window.location.href = '/';
+                } else {
+                    throw new Error(data.detail || 'Erreur de connexion');
+                }
+            } catch (error) {
+                alert('Erreur: ' + error.message);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async register(formData) {
+            this.loading = true;
+
+            try {
+                const response = await fetch('/users/api/register/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    this.user = data.user;
+                    this.token = data.token;
+
+                    // Stocker le token
+                    localStorage.setItem('auth_token', data.token);
+
+                    // Redirection
+                    window.location.href = '/';
+                } else {
+                    throw new Error(data.detail || 'Erreur d\'inscription');
+                }
+            } catch (error) {
+                alert('Erreur: ' + error.message);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async logout() {
+            try {
+                await fetch('/users/api/logout/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+
+                this.user = null;
+                this.token = null;
+                localStorage.removeItem('auth_token');
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Erreur de déconnexion:', error);
+            }
+        }
+    }));
+});
+</script>
+
+<script>
+function authNavbar(){
+
+  return {
+
+    isAuth: false,
+    user: {},
+
+    async checkAuth(){
+      try {
+
+        let res = await fetch("/api/check-auth/", {
+          method:"GET",
+          credentials:"include"
+        });
+
+        if(res.status === 200){
+          let data = await res.json();
+          this.isAuth = true;
+          this.user = data.user;
+        }
+
+      } catch (e) {
+        this.isAuth = false;
+      }
+    },
+
+    async logout(){
+
+      await fetch("/api/logout/", {
+        method:"POST",
+        credentials:"include"
+      });
+
+      this.isAuth = false;
+      this.user = {};
+      window.location.href = "/";
+    }
+
+  }
+}
+</script>
+
+</body>
+</html>
