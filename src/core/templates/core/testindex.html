@@ -1,0 +1,85 @@
+{% extends "base0.html" %}
+
+{% block content %}
+
+<section class="mb-10 rounded-2xl overflow-hidden relative bg-slate-900 text-white shadow-xl">
+    <div class="absolute inset-0 bg-gradient-to-r from-blue-900/40 to-purple-900/40 z-0"></div>
+    <div class="absolute -top-24 -right-24 w-64 h-64 bg-blue-500 rounded-full blur-[80px] opacity-20"></div>
+
+    <div class="relative z-10 px-8 py-12 md:py-16 flex flex-col md:flex-row items-center justify-between gap-8">
+        <div class="max-w-2xl">
+            <h1 class="text-3xl md:text-4xl font-bold tracking-tight mb-3">
+                Innover ensemble avec <span class="text-blue-400">TechInnoventia</span>
+            </h1>
+            <p class="text-slate-300 text-base mb-6 leading-relaxed max-w-lg">
+                Rejoignez la communauté tech guinéenne. Partagez, apprenez et construisez le futur du numérique.
+            </p>
+            <div class="flex items-center gap-3">
+                <a href="#" class="px-5 py-2.5 bg-white text-slate-900 text-sm font-semibold rounded-lg hover:bg-slate-100 transition-colors">
+                    Commencer à lire
+                </a>
+                <a href="#" class="px-5 py-2.5 bg-white/10 border border-white/10 text-white text-sm font-semibold rounded-lg hover:bg-white/20 transition-colors">
+                    Créer un compte
+                </a>
+            </div>
+        </div>
+        <div class="hidden md:block">
+           <div class="bg-white/10 backdrop-blur-md border border-white/10 p-4 rounded-xl max-w-xs transform rotate-3">
+               <div class="flex items-center gap-3 mb-2">
+                   <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                   <span class="text-xs font-mono text-blue-200">System.State: Online</span>
+               </div>
+               <div class="space-y-2">
+                   <div class="h-2 bg-white/20 rounded w-32"></div>
+                   <div class="h-2 bg-white/10 rounded w-24"></div>
+               </div>
+           </div>
+        </div>
+    </div>
+</section>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+    <div class="lg:col-span-8 space-y-8">
+
+        <div class="flex items-center justify-between">
+            <h2 class="text-xl font-bold text-slate-800">Dernières Publications</h2>
+            <div class="flex gap-2 text-sm">
+                <button class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors">Récent</button>
+                <button class="px-3 py-1.5 text-slate-500 hover:text-slate-800 transition-colors">Populaire</button>
+            </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-5">
+            {% for article in articles %}
+                {% include 'core/includes/article_card.html' with article=article %}
+            {% empty %}
+                <div class="col-span-2 py-12 text-center bg-white rounded-xl border border-slate-200 border-dashed">
+                    <p class="text-slate-400">Aucun article publié pour le moment.</p>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="flex justify-center pt-4">
+             <button class="text-sm font-medium text-blue-600 hover:underline">Voir plus d'articles &rarr;</button>
+        </div>
+    </div>
+
+    <aside class="lg:col-span-4 space-y-5">
+        {% include 'core/includes/sidebar_stats.html' %}
+        {% include 'core/includes/sidebar_categories.html' %}
+        {% include 'core/includes/sidebar_users.html' %}
+
+        <div class="bg-blue-50 rounded-xl p-5 border border-blue-100">
+            <h3 class="font-bold text-blue-900 text-sm mb-2">Restez informés</h3>
+            <p class="text-xs text-blue-700 mb-3">Recevez le meilleur de la tech chaque semaine.</p>
+            <form class="flex gap-2">
+                <input type="email" placeholder="Email..." class="w-full px-3 py-2 rounded-lg border-none text-sm focus:ring-2 focus:ring-blue-500/50">
+                <button class="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">OK</button>
+            </form>
+        </div>
+    </aside>
+
+</div>
+
+{% endblock %}

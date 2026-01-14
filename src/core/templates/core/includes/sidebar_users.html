@@ -1,23 +1,25 @@
-<div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-  <h3 class="font-bold text-lg text-gray-800 mb-4 flex items-center gap-2">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-    </svg>
-    Utilisateurs Actifs
-  </h3>
-  <ul class="space-y-4">
-    {% for u in active_users %}
-    <li class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors duration-300">
-      <div class="w-10 h-10 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
-        {{ u.username|slice:":1"|upper }}
-      </div>
-      <div>
-        <div class="font-medium text-gray-800">{{ u.username }}</div>
-        <div class="text-xs text-gray-500">{{ u.profile.role|default:"Membre" }}</div>
-      </div>
-    </li>
-    {% empty %}
-    <li class="text-gray-500 text-center py-4">Aucun utilisateur actif</li>
-    {% endfor %}
-  </ul>
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+        <h3 class="font-semibold text-slate-800 text-sm flex items-center gap-2">
+            👥 Membres Actifs
+        </h3>
+    </div>
+    <div class="p-2 space-y-1">
+        {% for u in active_users %}
+        <div class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors">
+            <div class="relative">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center text-xs font-bold shadow-sm">
+                    {{ u.username|slice:":1"|upper }}
+                </div>
+                <div class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-slate-700 truncate">{{ u.username }}</p>
+                <p class="text-[10px] text-slate-400 truncate">{{ u.profile.role|default:"Membre" }}</p>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-xs text-slate-400 text-center py-2">Personne en ligne</p>
+        {% endfor %}
+    </div>
 </div>

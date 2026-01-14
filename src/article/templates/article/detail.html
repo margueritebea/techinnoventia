@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}{{ article.title }} - TechInnoventia{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto pb-20">
+
+    <header class="mb-12 text-center px-4">
+        <div class="flex items-center justify-center gap-2 mb-6">
+            <span class="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold uppercase tracking-wider">
+                {{ article.category.name }}
+            </span>
+            <span class="text-slate-400 text-sm">•</span>
+            <span class="text-slate-500 text-sm">{{ article.read_time }} min de lecture</span>
+        </div>
+
+        <h1 class="text-3xl md:text-5xl font-extrabold text-slate-900 mb-6 leading-tight">
+            {{ article.title }}
+        </h1>
+
+        <p class="text-xl text-slate-500 leading-relaxed max-w-2xl mx-auto mb-8">
+            {{ article.excerpt }}
+        </p>
+
+        <div class="flex items-center justify-center gap-4 border-t border-b border-slate-100 py-6 max-w-lg mx-auto">
+            <div class="flex items-center gap-3">
+                {% if article.author.profile.avatar %}
+                    <img src="{{ article.author.profile.avatar.url }}" class="w-12 h-12 rounded-full object-cover ring-2 ring-white shadow-sm">
+                {% else %}
+                    <div class="w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-lg">
+                        {{ article.author.username|slice:":1"|upper }}
+                    </div>
+                {% endif %}
+                <div class="text-left">
+                    <p class="font-bold text-slate-900">{{ article.author.get_full_name|default:article.author.username }}</p>
+                    <p class="text-xs text-slate-500">{{ article.published_at|date:"d F Y" }}</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    {% if article.cover %}
+    <div class="mb-16 -mx-4 md:-mx-0">
+        <img src="{{ article.cover.url }}" alt="{{ article.title }}" class="w-full h-[400px] md:h-[500px] object-cover md:rounded-2xl shadow-lg">
+    </div>
+    {% endif %}
+
+    <article class="prose prose-lg prose-slate mx-auto px-4 md:px-0">
+
+        {% for section in article.sections.all %}
+        <div class="mb-12 section-block group">
+
+            {% if section.title %}
+            <h2 class="text-2xl md:text-3xl font-bold text-slate-800 mb-6 mt-8 flex items-center gap-3">
+                <span class="w-8 h-1 bg-blue-500 rounded-full hidden md:block"></span>
+                {{ section.title }}
+            </h2>
+            {% endif %}
+
+            {% if section.image %}
+            <figure class="my-8">
+                <img src="{{ section.image.url }}" alt="{{ section.image_caption|default:section.title }}" class="w-full rounded-xl shadow-md border border-slate-100">
+                {% if section.image_caption %}
+                <figcaption class="text-center text-sm text-slate-500 mt-2 italic">
+                    {{ section.image_caption }}
+                </figcaption>
+                {% endif %}
+            </figure>
+            {% endif %}
+
+            <div class="text-slate-700 leading-8">
+                {{ section.content|linebreaks }}
+            </div>
+        </div>
+        {% endfor %}
+
+    </article>
+
+    <div class="mt-16 pt-8 border-t border-slate-200 px-4 md:px-0">
+        <div class="flex flex-wrap gap-2 mb-8">
+            {% for tag in article.tags.all %}
+            <a href="#" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm hover:bg-slate-200 transition-colors">
+                #{{ tag.name }}
+            </a>
+            {% endfor %}
+        </div>
+
+        <div class="bg-blue-50 rounded-2xl p-8 text-center border border-blue-100">
+            <h3 class="font-bold text-xl text-blue-900 mb-2">Cet article vous a plu ?</h3>
+            <p class="text-blue-700 mb-4">Rejoignez la discussion dans les commentaires.</p>
+            <button class="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors shadow-sm">
+                Voir les commentaires ({{ article.comments_count }})
+            </button>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
