@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Articles - TechInnoventia{% endblock %}
+
+{% block content %}
+
+<!-- Hero Section -->
+<section class="mb-10 rounded-2xl overflow-hidden relative bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white shadow-xl">
+    <div class="absolute inset-0 bg-gradient-to-r from-blue-900/40 to-purple-900/40 z-0"></div>
+    <div class="absolute -top-24 -right-24 w-64 h-64 bg-blue-500 rounded-full blur-[80px] opacity-20"></div>
+
+    <div class="relative z-10 px-8 py-12 md:py-16 flex flex-col md:flex-row items-center justify-between gap-8">
+        <div class="max-w-2xl">
+            <h1 class="text-3xl md:text-4xl font-bold tracking-tight mb-3">
+                Découvrez les <span class="text-blue-400">dernières innovations</span>
+            </h1>
+            <p class="text-slate-300 text-base mb-6 leading-relaxed max-w-lg">
+                Explorez notre collection d'articles sur la technologie, l'innovation et le numérique en Guinée.
+            </p>
+
+            <!-- Barre de recherche -->
+            <form method="GET" class="flex items-center gap-3 max-w-xl">
+                <div class="relative flex-grow">
+                    <input 
+                        type="text" 
+                        name="q" 
+                        value="{{ search_query }}"
+                        placeholder="Rechercher un article..." 
+                        class="w-full px-4 py-3 pr-10 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                    >
+                    <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+                <button type="submit" class="px-5 py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors">
+                    Rechercher
+                </button>
+            </form>
+        </div>
+
+        <div class="hidden md:block">
+           <div class="bg-white/10 backdrop-blur-md border border-white/10 p-4 rounded-xl max-w-xs transform rotate-3">
+               <div class="flex items-center gap-3 mb-2">
+                   <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                   <span class="text-xs font-mono text-blue-200">{{ total_articles }} articles publiés</span>
+               </div>
+               <div class="space-y-2">
+                   <div class="h-2 bg-white/20 rounded w-32"></div>
+                   <div class="h-2 bg-white/10 rounded w-24"></div>
+               </div>
+           </div>
+        </div>
+    </div>
+</section>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+    <!-- Contenu principal -->
+    <div class="lg:col-span-8 space-y-8">
+
+        <!-- Filtres et tri -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+            <div class="flex items-center gap-2">
+                <h2 class="text-lg font-bold text-slate-800">
+                    {% if current_category %}
+                        Catégorie: {{ current_category }}
+                    {% elif current_tag %}
+                        Tag: #{{ current_tag }}
+                    {% elif search_query %}
+                        Résultats pour "{{ search_query }}"
+                    {% else %}
+                        Tous les articles
+                    {% endif %}
+                </h2>
+                <span class="px-2 py-1 bg-blue-50 text-blue-600 text-xs font-semibold rounded-full">
+                    {{ page_obj.paginator.count|default:articles.count }} article{{ page_obj.paginator.count|default:articles.count|pluralize }}
+                </span>
+            </div>
+
+            <div class="flex gap-2 text-sm">
+                <a href="?sort=recent{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" 
+                   class="px-3 py-1.5 {% if current_sort == 'recent' %}bg-blue-600 text-white{% else %}bg-white border border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600{% endif %} rounded-lg transition-colors">
+                    Récent
+                </a>
+                <a href="?sort=popular{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" 
+                   class="px-3 py-1.5 {% if current_sort == 'popular' %}bg-blue-600 text-white{% else %}bg-white border border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600{% endif %} rounded-lg transition-colors">
+                    Populaire
+                </a>
+            </div>
+        </div>
+
+        <!-- Filtres actifs -->
+        {% if current_category or current_tag or search_query %}
+        <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-sm text-slate-600 font-medium">Filtres actifs:</span>
+            {% if current_category %}
+            <a href="?" class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200 transition-colors">
+                Catégorie: {{ current_category }}
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </a>
+            {% endif %}
+            {% if current_tag %}
+            <a href="?" class="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm hover:bg-purple-200 transition-colors">
+                Tag: #{{ current_tag }}
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </a>
+            {% endif %}
+            {% if search_query %}
+            <a href="?" class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200 transition-colors">
+                Recherche: "{{ search_query }}"
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </a>
+            {% endif %}
+            <a href="?" class="text-sm text-slate-500 hover:text-slate-700 underline">Tout effacer</a>
+        </div>
+        {% endif %}
+
+        <!-- Liste des articles -->
+        <div class="grid md:grid-cols-2 gap-5">
+            {% for article in articles %}
+                {% include 'core/includes/article_card.html' with article=article %}
+            {% empty %}
+                <div class="col-span-2 py-16 text-center bg-white rounded-xl border border-slate-200 border-dashed">
+                    <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <p class="text-slate-500 text-lg mb-2">Aucun article trouvé</p>
+                    <p class="text-slate-400 text-sm">Essayez de modifier vos critères de recherche</p>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj %}
+        <div class="flex items-center justify-center gap-2 pt-8">
+            {% if page_obj.has_previous %}
+                <a href="?page=1{% if current_sort != 'recent' %}&sort={{ current_sort }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" 
+                   class="px-3 py-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50 transition-colors">
+                    &laquo; Première
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}{% if current_sort != 'recent' %}&sort={{ current_sort }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" 
+                   class="px-3 py-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50 transition-colors">
+                    Précédent
+                </a>
+            {% endif %}
+
+            <span class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium">
+                Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if current_sort != 'recent' %}&sort={{ current_sort }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" 
+                   class="px-3 py-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50 transition-colors">
+                    Suivant
+                </a>
+                <a href="?page={{ page_obj.paginator.num_pages }}{% if current_sort != 'recent' %}&sort={{ current_sort }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" 
+                   class="px-3 py-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50 transition-colors">
+                    Dernière &raquo;
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="lg:col-span-4 space-y-5">
+        
+        <!-- Statistiques -->
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+            <h3 class="font-bold text-slate-800 text-sm mb-4 flex items-center gap-2">
+                <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path>
+                </svg>
+                Statistiques
+            </h3>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-600 text-sm">Articles</span>
+                    <span class="font-bold text-blue-600">{{ total_articles }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-600 text-sm">Auteurs</span>
+                    <span class="font-bold text-blue-600">{{ total_authors }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-600 text-sm">Catégories</span>
+                    <span class="font-bold text-blue-600">{{ total_categories }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Catégories -->
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+            <h3 class="font-bold text-slate-800 text-sm mb-4">Catégories</h3>
+            <div class="space-y-2">
+                {% for category in categories %}
+                <a href="?category={{ category.slug }}" 
+                   class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors group {% if current_category == category.slug %}bg-blue-50{% endif %}">
+                    <span class="text-sm text-slate-700 group-hover:text-blue-600 {% if current_category == category.slug %}text-blue-600 font-medium{% endif %}">
+                        {{ category.name }}
+                    </span>
+                    <span class="text-xs font-semibold text-slate-400 group-hover:text-blue-600">
+                        {{ category.article_count }}
+                    </span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Tags populaires -->
+        {% if popular_tags %}
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+            <h3 class="font-bold text-slate-800 text-sm mb-4">Tags populaires</h3>
+            <div class="flex flex-wrap gap-2">
+                {% for tag in popular_tags %}
+                <a href="?tag={{ tag.slug }}" 
+                   class="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs hover:bg-blue-100 hover:text-blue-700 transition-colors {% if current_tag == tag.slug %}bg-blue-100 text-blue-700{% endif %}">
+                    #{{ tag.name }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Articles tendance -->
+        {% if trending_articles %}
+        <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-5 border border-blue-100">
+            <h3 class="font-bold text-slate-800 text-sm mb-4 flex items-center gap-2">
+                <svg class="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd"></path>
+                </svg>
+                Tendances
+            </h3>
+            <div class="space-y-3">
+                {% for article in trending_articles %}
+                <a href="{% url 'article:detail' article.slug %}" class="block group">
+                    <div class="flex gap-3">
+                        {% if article.cover %}
+                        <img src="{{ article.cover.url }}" alt="{{ article.title }}" class="w-16 h-16 rounded-lg object-cover border border-white shadow-sm">
+                        {% else %}
+                        <div class="w-16 h-16 rounded-lg bg-slate-200 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        {% endif %}
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-sm font-medium text-slate-800 group-hover:text-blue-600 line-clamp-2 transition-colors">
+                                {{ article.title }}
+                            </h4>
+                            <p class="text-xs text-slate-500 mt-1">{{ article.read_time }} min</p>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Newsletter -->
+        <div class="bg-blue-600 rounded-xl p-5 text-white">
+            <h3 class="font-bold text-lg mb-2">Restez informés</h3>
+            <p class="text-blue-100 text-sm mb-4">Recevez le meilleur de la tech chaque semaine.</p>
+            <form class="space-y-2">
+                <input type="email" placeholder="Votre email..." class="w-full px-4 py-2.5 rounded-lg border-none text-slate-900 focus:ring-2 focus:ring-blue-300 text-sm">
+                <button class="w-full bg-white text-blue-600 px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-50 transition-colors">
+                    S'abonner
+                </button>
+            </form>
+        </div>
+
+    </aside>
+
+</div>
+
+{% endblock %}

@@ -18,18 +18,6 @@ from rest_framework.decorators import api_view, permission_classes
 from .serializers import LoginSerializer, RegisterSerializer, UserSerializer
 from .tokens import set_jwt_cookies, get_tokens_for_user
 
-
-
-def login_page(request):
-    """
-    L'authentification réelle est gérée par les endpoints API (DRF + cookies JWT).
-    """
-    if request.user.is_authenticated:
-        return redirect("/")
-
-    return render(request, "authentication/login.html")
-
-##########################################################################333333
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
@@ -120,3 +108,23 @@ def check_auth(request):
             "avatar": user.profile.avatar.url if user.profile.avatar else None,
         }
     })
+##########################################################################333333
+
+def login_page(request):
+    """
+    L'authentification réelle est gérée par les endpoints API (DRF + cookies JWT).
+    """
+    if request.user.is_authenticated:
+        return redirect("/")
+
+    return render(request, "authentication/login.html")
+
+
+def register_page(request):
+    """
+    L'inscription réelle est gérée par les endpoints API (DRF + cookies JWT).
+    """
+    if request.user.is_authenticated:
+        return redirect("/")
+
+    return render(request, "authentication/register.html")

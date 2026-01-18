@@ -61,7 +61,9 @@
         </div>
 
         <div class="flex justify-center pt-4">
-             <button class="text-sm font-medium text-blue-600 hover:underline">Voir plus d'articles &rarr;</button>
+            <a href="{% url 'article:list' %}">
+                <button class="text-sm font-medium text-blue-600 hover:underline">Voir plus d'articles &rarr;</button>
+            </a>
         </div>
     </div>
 

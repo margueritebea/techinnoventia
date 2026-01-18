@@ -7,7 +7,14 @@ app_name = 'article'
 urlpatterns = [
     # Vues Templates (Pages HTML)
     path('detail/<slug:slug>/', views.article_detail, name='detail'),
+    # 
+    path('articles/', views.ArticleListView.as_view(), name='list'),
+    # path('articles/<slug:slug>/', ArticleDetailView.as_view(), name='detail'),
+
 
     # Endpoints API (JSON)
     path('api/<slug:slug>/like/', api_views.ToggleLikeAPIView.as_view(), name='api_toggle_like'),
 ]
+
+
+

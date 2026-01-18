@@ -24,6 +24,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
               </div>
               <div class="flex-1">
+                <p class="text-sm font-medium text-slate-700">Articles</p>
                 <p class="text-sm font-medium text-slate-700">Actualités Tech</p>
                 <p class="text-[10px] text-slate-400">Les dernières nouveautés</p>
               </div>
@@ -116,7 +117,7 @@
       {% else %}
         <div class="flex items-center gap-3">
            <a href="{% url 'authentication:login' %}" class="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Connexion</a>
-           <a href="" class="bg-slate-900 text-white text-sm px-4 py-1.5 rounded-full font-medium hover:bg-slate-800 transition-colors shadow-sm">Inscription</a>
+           <a href="{% url 'authentication:register' %}" class="bg-slate-900 text-white text-sm px-4 py-1.5 rounded-full font-medium hover:bg-slate-800 transition-colors shadow-sm">Inscription</a>
         </div>
       {% endif %}
     </div>
@@ -144,6 +145,7 @@
 
       <div class="space-y-1">
         <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Navigation</p>
+        <a href="#" class="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600">Articles</a>
         <a href="#" class="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600">Actualités Tech</a>
         <a href="#" class="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600">Programmation</a>
         <a href="#" class="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600">Communauté</a>
@@ -164,7 +166,7 @@
         {% else %}
           <div class="grid grid-cols-2 gap-3">
              <a href="{% url 'authentication:login' %}" class="text-center py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700">Connexion</a>
-             <a href="" class="text-center py-2 rounded-lg bg-blue-600 text-white text-sm font-medium">Inscription</a>
+             <a href="{% url 'authentication:register' %}" class="text-center py-2 rounded-lg bg-blue-600 text-white text-sm font-medium">Inscription</a>
           </div>
         {% endif %}
       </div>

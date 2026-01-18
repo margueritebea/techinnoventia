@@ -6,7 +6,7 @@ app_name = "authentication"
 
 urlpatterns = [
     path('signin/', views.login_page, name='login'),
-    path('signup/', views.login_page, name='register'),
+    path('signup/', views.register_page, name='register'),
 
     # API DRF
     path("api/register/", views.RegisterView.as_view(), name="api_register"),
