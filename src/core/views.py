@@ -59,7 +59,7 @@ def home(request):
         "categories": categories_list,
         "active_users": active_users,
     }
-    return render(request, "core/testindex.html", context=data)
+    return render(request, "core/index.html", context=data)
 
 
 

@@ -117,7 +117,7 @@ def login_page(request):
     if request.user.is_authenticated:
         return redirect("/")
 
-    return render(request, "authentication/login.html")
+    return render(request, "authentication/signup.html")
 
 
 def register_page(request):

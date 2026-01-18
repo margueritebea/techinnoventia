@@ -13,7 +13,7 @@ from datetime import timedelta
 # Chemins de base du projet
 # BASE_DIR pointe vers le dossier 'src/' (là où se trouve manage.py)
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+print(f"BASE_DIR is set to: {BASE_DIR}")
 # ============================================================================
 # APPLICATIONS
 # ============================================================================

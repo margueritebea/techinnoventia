@@ -1,4 +1,4 @@
-{% extends "base0.html" %}
+{% extends "base.html" %}
 {% block title %}Connexion - TechInnoventia{% endblock %}
 
 {% block content %}
@@ -114,7 +114,7 @@
       <div class="text-center">
         <p class="text-sm text-gray-600">
           Nouveau sur TechInnoventia?
-          <a href="{% url 'register' %}" class="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200">
+          <a href="{% url 'authentication:register' %}" class="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200">
             Créer un compte
           </a>
         </p>
