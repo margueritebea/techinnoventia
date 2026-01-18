@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 
 # ============================================================================
 # CHARGEMENT DES VARIABLES D'ENVIRONNEMENT
-load_dotenv(base_dir=BASE_DIR / '.env')
+load_dotenv(BASE_DIR / '.env')
 
 # ============================================================================
 # MODE DEBUG
