@@ -75,7 +75,7 @@ SESSION_COOKIE_SAMESITE = 'Lax'  # Plus permissif qu'en production
 
 CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_SAMESITE = 'Lax'
-
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 # ============================================================================
 # EMAIL BACKEND
 # ============================================================================

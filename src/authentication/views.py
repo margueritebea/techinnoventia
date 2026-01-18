@@ -55,8 +55,6 @@ class LoginView(APIView):
         return response
 
 
-
-
 class CookieTokenRefreshView(APIView):
     permission_classes = [AllowAny]
 
@@ -89,6 +87,8 @@ class LogoutView(APIView):
         # supprimer cookies
         response.delete_cookie(settings.SIMPLE_JWT.get("AUTH_COOKIE", "access_token"))
         response.delete_cookie(settings.SIMPLE_JWT.get("AUTH_COOKIE_REFRESH", "refresh_token"))
+        response.delete_cookie('sessionid')
+        response.delete_cookie('csrftoken')
         return response
 
 
@@ -105,7 +105,30 @@ def check_auth(request):
             "id": user.id,
             "username": user.username,
             "email": user.email,
-            "avatar": user.profile.avatar.url if user.profile.avatar else None,
+            "avatar": user.profile.avatar.url if hasattr(user, 'profile') and user.profile.avatar else None,
+
+        }
+    })
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])  # ← Changé de IsAuthenticated à AllowAny
+def check_auth(request):
+    # Vérifier si l'utilisateur est authentifié via JWT
+    if not request.user.is_authenticated or request.user.is_anonymous:
+        return Response({
+            "authenticated": False
+        })
+
+    user = request.user
+
+    return Response({
+        "authenticated": True,
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "avatar": user.profile.avatar.url if hasattr(user, 'profile') and user.profile.avatar else None,
         }
     })
 ##########################################################################333333
@@ -117,7 +140,7 @@ def login_page(request):
     if request.user.is_authenticated:
         return redirect("/")
 
-    return render(request, "authentication/signup.html")
+    return render(request, "authentication/login.html")
 
 
 def register_page(request):
