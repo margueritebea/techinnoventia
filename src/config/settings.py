@@ -14,6 +14,13 @@ Utilisation :
 
 from .base_settings import *
 import os
+from dotenv import load_dotenv
+
+# ============================================================================
+# CHARGEMENT DES VARIABLES D'ENVIRONNEMENT
+load_dotenv()  # Charge les variables depuis un fichier .env si présent
+
+
 
 # ============================================================================
 # MODE DEBUG
