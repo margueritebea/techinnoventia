@@ -11,6 +11,7 @@ urlpatterns = [
     path('users/', include('authentication.urls')),
     path('article/', include('article.urls')),
     path('api-auth/', include('rest_framework.urls')),
+    path('ia_chat/', include('ia_chat.urls')),
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

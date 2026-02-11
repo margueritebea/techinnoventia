@@ -1,0 +1,480 @@
+{% extends "base.html" %}
+
+{% block title %}Créer un article - TechInnoventia{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+
+<!-- ⚠️ SCRIPT AVANT LE DIV ALPINE -->
+<script>
+function articleEditor() {
+    return {
+        article: {
+            title: '',
+            excerpt: '',
+            cover: null,
+            coverFile: null, // Stocker le fichier réel
+            category_id: '',
+            tag_ids: [],
+            sections: [],
+            status: 'draft'
+        },
+        categories: [],
+        tags: [],
+        showPreview: true,
+        saving: false,
+        editMode: false,
+        articleSlug: null,
+        coverInput: null, // Référence à l'input file
+        sectionImageInputs: [], // Références aux inputs de sections
+
+        init() {
+            console.log('🚀 Initialisation de l\'éditeur...');
+            this.loadCategories();
+            this.loadTags();
+            
+            // Récupérer les références aux inputs file après le rendu
+            this.$nextTick(() => {
+                this.coverInput = document.querySelector('#cover-input');
+            });
+            
+            // Si on édite un article existant
+            const urlParams = new URLSearchParams(window.location.search);
+            const slug = urlParams.get('edit');
+            if (slug) {
+                this.editMode = true;
+                this.articleSlug = slug;
+                this.loadArticle(slug);
+            }
+        },
+
+        async loadCategories() {
+            try {
+                console.log('📡 Chargement des catégories...');
+                const response = await fetch('/article/api/categories/');
+                if (response.ok) {
+                    const data = await response.json();
+                    this.categories = Array.isArray(data) ? data : (data.results || []);
+                    console.log(`✅ ${this.categories.length} catégories chargées`);
+                }
+            } catch (error) {
+                console.error('❌ Erreur réseau catégories:', error);
+                this.categories = [];
+            }
+        },
+
+        async loadTags() {
+            try {
+                const response = await fetch('/article/api/tags/');
+                if (response.ok) {
+                    const data = await response.json();
+                    this.tags = Array.isArray(data) ? data : (data.results || []);
+                }
+            } catch (error) {
+                console.error('❌ Erreur réseau tags:', error);
+                this.tags = [];
+            }
+        },
+
+        async loadArticle(slug) {
+            try {
+                const response = await fetch(`/article/api/articles/${slug}/`);
+                if (response.ok) {
+                    const data = await response.json();
+                    this.article = {
+                        title: data.title,
+                        excerpt: data.excerpt,
+                        cover: data.cover,
+                        coverFile: null,
+                        category_id: data.category?.id || '',
+                        tag_ids: data.tags.map(t => t.id),
+                        sections: data.sections || [],
+                        status: data.status
+                    };
+                }
+            } catch (error) {
+                console.error('Erreur réseau article:', error);
+            }
+        },
+
+        addSection() {
+            this.article.sections.push({
+                position: this.article.sections.length,
+                title: '',
+                content: '',
+                image: null,
+                imageFile: null, // Fichier réel
+                image_caption: ''
+            });
+        },
+
+        removeSection(index) {
+            if (confirm('Supprimer cette section ?')) {
+                this.article.sections.splice(index, 1);
+                this.updatePositions();
+            }
+        },
+
+        moveSection(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex >= 0 && newIndex < this.article.sections.length) {
+                const temp = this.article.sections[index];
+                this.article.sections[index] = this.article.sections[newIndex];
+                this.article.sections[newIndex] = temp;
+                this.updatePositions();
+            }
+        },
+
+        updatePositions() {
+            this.article.sections.forEach((section, index) => {
+                section.position = index;
+            });
+        },
+
+        handleCoverUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Stocker le fichier réel
+                this.article.coverFile = file;
+                
+                // Créer preview base64
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.article.cover = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        },
+
+        handleSectionImageUpload(event, index) {
+            const file = event.target.files[0];
+            if (file) {
+                // Stocker le fichier réel
+                this.article.sections[index].imageFile = file;
+                
+                // Créer preview base64
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.article.sections[index].image = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        },
+
+        isValid() {
+            return this.article.title && this.article.excerpt && this.article.category_id;
+        },
+
+        async saveArticle(status) {
+            if (!this.isValid()) {
+                alert('Veuillez remplir les champs obligatoires');
+                return;
+            }
+
+            this.saving = true;
+            this.article.status = status;
+
+            try {
+                const url = this.editMode 
+                    ? `/article/api/articles/${this.articleSlug}/`
+                    : '/article/api/articles/';
+                
+                const method = this.editMode ? 'PUT' : 'POST';
+
+                // Créer FormData pour les fichiers
+                const formData = new FormData();
+                
+                // Champs simples
+                formData.append('title', this.article.title);
+                formData.append('excerpt', this.article.excerpt);
+                formData.append('status', this.article.status);
+                
+                if (this.article.category_id) {
+                    formData.append('category_id', this.article.category_id);
+                }
+                
+                // Tags
+                this.article.tag_ids.forEach(tagId => {
+                    formData.append('tag_ids', tagId);
+                });
+                
+                // Image de couverture (fichier réel)
+                if (this.article.coverFile) {
+                    formData.append('cover', this.article.coverFile);
+                }
+                
+                // Sections (en JSON car structure complexe)
+                const sectionsData = this.article.sections.map((section, index) => ({
+                    position: section.position,
+                    title: section.title || '',
+                    content: section.content,
+                    image_caption: section.image_caption || ''
+                }));
+                formData.append('sections', JSON.stringify(sectionsData));
+                
+                // Images des sections
+                this.article.sections.forEach((section, index) => {
+                    if (section.imageFile) {
+                        formData.append(`section_${index}_image`, section.imageFile);
+                    }
+                });
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'X-CSRFToken': this.getCsrfToken()
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    alert(status === 'published' ? 'Article publié avec succès !' : 'Article sauvegardé !');
+                    
+                    if (!this.editMode) {
+                        window.location.href = `/article/${data.slug}/`;
+                    }
+                } else {
+                    const errorData = await response.json();
+                    console.error('Erreur sauvegarde:', errorData);
+                    alert('Erreur lors de la sauvegarde: ' + JSON.stringify(errorData));
+                }
+            } catch (error) {
+                console.error('Erreur réseau:', error);
+                alert('Erreur réseau');
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        getCsrfToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        }
+    }
+}
+</script>
+
+<div x-data="articleEditor()" x-init="init()" class="min-h-screen bg-slate-50">
+    
+    <!-- Header avec actions -->
+    <div class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a href="{% url 'article:my_articles' %}" class="text-slate-600 hover:text-slate-900">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </a>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900">
+                        <span x-show="!editMode">Nouvel article</span>
+                        <span x-show="editMode">Modifier l'article</span>
+                    </h1>
+                    <p class="text-sm text-slate-500" x-show="article.status === 'draft'">Brouillon • Sauvegarde automatique</p>
+                    <p class="text-sm text-green-600" x-show="article.status === 'published'">Publié</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <!-- Toggle Preview -->
+                <button @click="showPreview = !showPreview" 
+                        class="px-4 py-2 text-slate-600 hover:text-slate-900 font-medium text-sm flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    <span x-text="showPreview ? 'Masquer l\'aperçu' : 'Aperçu'"></span>
+                </button>
+                
+                <!-- Bouton Sauvegarder -->
+                <button @click="saveArticle('draft')" 
+                        :disabled="saving"
+                        class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium text-sm disabled:opacity-50">
+                    <span x-show="!saving">Sauvegarder</span>
+                    <span x-show="saving">Sauvegarde...</span>
+                </button>
+                
+                <!-- Bouton Publier -->
+                <button @click="saveArticle('published')" 
+                        :disabled="saving || !isValid()"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm disabled:opacity-50">
+                    <span x-show="article.status === 'published'">Mettre à jour</span>
+                    <span x-show="article.status !== 'published'">Publier</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto p-6">
+        <div class="grid" :class="showPreview ? 'grid-cols-2 gap-6' : 'grid-cols-1'">
+            
+            <!-- ÉDITEUR -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+                
+                <!-- Titre -->
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Titre de l'article *</label>
+                    <input 
+                        type="text" 
+                        x-model="article.title"
+                        placeholder="Un titre accrocheur..."
+                        class="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-2xl font-bold"
+                        maxlength="255">
+                    <p class="text-xs text-slate-500 mt-1" x-text="`${article.title.length}/255 caractères`"></p>
+                </div>
+
+                <!-- Excerpt -->
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Résumé / Extrait *</label>
+                    <textarea 
+                        x-model="article.excerpt"
+                        placeholder="Un résumé accrocheur qui donne envie de lire..."
+                        rows="3"
+                        maxlength="500"
+                        class="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+                    <p class="text-xs text-slate-500 mt-1" x-text="`${article.excerpt.length}/500 caractères`"></p>
+                </div>
+
+                <!-- Catégorie et Cover -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Catégorie *</label>
+                        <select x-model="article.category_id" class="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="">Sélectionner...</option>
+                            <template x-for="cat in categories" :key="cat.id">
+                                <option :value="cat.id" x-text="cat.name"></option>
+                            </template>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Image de couverture</label>
+                        <input 
+                            id="cover-input"
+                            type="file" 
+                            @change="handleCoverUpload($event)"
+                            accept="image/*"
+                            class="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm">
+                    </div>
+                </div>
+
+                <!-- Preview de la cover -->
+                <div x-show="article.cover" class="mb-6">
+                    <img :src="article.cover" class="w-full h-48 object-cover rounded-lg">
+                </div>
+
+                <!-- SECTIONS -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <label class="block text-sm font-bold text-slate-700">Contenu de l'article</label>
+                        <button @click="addSection()" class="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100">
+                            + Ajouter une section
+                        </button>
+                    </div>
+
+                    <template x-for="(section, index) in article.sections" :key="index">
+                        <div class="mb-6 p-6 bg-slate-50 rounded-lg border-2 border-slate-200 hover:border-blue-300 transition-colors">
+                            
+                            <!-- Header de section -->
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-sm font-bold text-slate-600">Section <span x-text="index + 1"></span></span>
+                                <div class="flex items-center gap-2">
+                                    <button @click="moveSection(index, -1)" x-show="index > 0" class="p-1 text-slate-400 hover:text-slate-700">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                                        </svg>
+                                    </button>
+                                    <button @click="moveSection(index, 1)" x-show="index < article.sections.length - 1" class="p-1 text-slate-400 hover:text-slate-700">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </button>
+                                    <button @click="removeSection(index)" class="p-1 text-red-400 hover:text-red-700">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Titre de section -->
+                            <input 
+                                type="text" 
+                                x-model="section.title"
+                                placeholder="Titre de la section (optionnel)"
+                                class="w-full px-4 py-2 border border-slate-300 rounded-lg mb-3 font-semibold">
+
+                            <!-- Image de section -->
+                            <input 
+                                type="file" 
+                                @change="handleSectionImageUpload($event, index)"
+                                accept="image/*"
+                                class="w-full px-4 py-2 border border-slate-300 rounded-lg mb-3 text-sm">
+                            
+                            <div x-show="section.image" class="mb-3">
+                                <img :src="section.image" class="w-full h-32 object-cover rounded-lg mb-2">
+                                <input 
+                                    type="text" 
+                                    x-model="section.image_caption"
+                                    placeholder="Légende de l'image"
+                                    class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+                            </div>
+
+                            <!-- Contenu -->
+                            <textarea 
+                                x-model="section.content"
+                                placeholder="Rédigez le contenu de cette section..."
+                                rows="8"
+                                class="w-full px-4 py-3 border border-slate-300 rounded-lg resize-none"></textarea>
+                        </div>
+                    </template>
+
+                    <div x-show="article.sections.length === 0" class="text-center py-12 text-slate-400">
+                        <p>Aucune section. Cliquez sur "Ajouter une section" pour commencer.</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- PREVIEW -->
+            <div x-show="showPreview" class="bg-white rounded-xl shadow-sm border border-slate-200 p-8 sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
+                <div class="prose prose-slate max-w-none">
+                    
+                    <!-- Header Preview -->
+                    <div class="text-center mb-8">
+                        <span x-show="article.category_id && categories.length > 0" class="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold uppercase">
+                            <template x-for="cat in categories" :key="cat.id">
+                                <span x-show="cat.id == article.category_id" x-text="cat.name"></span>
+                            </template>
+                        </span>
+                        <h1 class="text-4xl font-extrabold text-slate-900 mt-4 mb-4" x-text="article.title || 'Titre de l\'article'"></h1>
+                        <p class="text-xl text-slate-500" x-text="article.excerpt || 'Résumé de l\'article...'"></p>
+                    </div>
+
+                    <!-- Cover Preview -->
+                    <div x-show="article.cover" class="mb-8">
+                        <img :src="article.cover" class="w-full h-64 object-cover rounded-xl">
+                    </div>
+
+                    <!-- Sections Preview -->
+                    <template x-for="(section, index) in article.sections" :key="index">
+                        <div class="mb-8">
+                            <h2 x-show="section.title" class="text-2xl font-bold text-slate-800 mb-4" x-text="section.title"></h2>
+                            
+                            <div x-show="section.image" class="mb-4">
+                                <img :src="section.image" class="w-full rounded-lg">
+                                <p x-show="section.image_caption" class="text-sm text-slate-500 mt-2 italic text-center" x-text="section.image_caption"></p>
+                            </div>
+                            
+                            <p class="text-slate-700 leading-8 whitespace-pre-wrap" x-text="section.content || 'Contenu de la section...'"></p>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

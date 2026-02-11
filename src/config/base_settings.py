@@ -9,17 +9,27 @@ Utilisé comme base par :
 
 from pathlib import Path
 from datetime import timedelta
+import os
+from dotenv import load_dotenv
+
+# Charge .env depuis la racine du projet
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
+
+
 
 # Chemins de base du projet
 # BASE_DIR pointe vers le dossier 'src/' (là où se trouve manage.py)
 BASE_DIR = Path(__file__).resolve().parent.parent
-print(f"BASE_DIR is set to: {BASE_DIR}")
+# print(f"BASE_DIR is set to: {BASE_DIR}")
+
 # ============================================================================
 # APPLICATIONS
 # ============================================================================
 
 # Applications Django par défaut
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -33,6 +43,7 @@ THIRD_PARTY_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
+    'channels',
 ]
 
 # Applications personnalisées du projet
@@ -40,6 +51,7 @@ USER_APPS = [
     'core',
     'authentication',
     'article',
+    'ia_chat',
 ]
 
 # Assemblage de toutes les applications
@@ -68,6 +80,28 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'config.urls'
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
+
+# ===========================================================================
+# Channels configuration
+# ==========================================================================
+ASGI_APPLICATION = 'config.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}
+
+# For development without Redis (in-memory)
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels.layers.InMemoryChannelLayer'
+#     }
+# }
 
 # ============================================================================
 # TEMPLATES
@@ -122,7 +156,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles'  # Utilisé par 'collectstatic' en production
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # ============================================================================
 # FICHIERS MÉDIA (Uploads utilisateurs)
@@ -144,7 +178,7 @@ AUTH_USER_MODEL = 'authentication.User'
 # Backends d'authentification
 AUTHENTICATION_BACKENDS = [
     'authentication.backends.EmailOrUsernameBackend',  # Permet login avec email ou username
-    'django.contrib.auth.backends.ModelBackend',  # Backend Django par défaut (fallback)
+    'django.contrib.auth.backends.ModelBackend',  # (fallback)
 ]
 
 # Redirections après login/logout
@@ -171,6 +205,14 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',  # Interface navigateur pour tester l'API
     ],
+    # Pagination par défaut
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
+    # Filtres par défaut
+    'DEFAULT_FILTER_BACKENDS': [
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],    
 }
 
 # ============================================================================
@@ -201,3 +243,27 @@ SIMPLE_JWT = {
 
 SESSION_COOKIE_AGE = 1209600  # 2 semaines en secondes
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # La session persiste après fermeture du navigateur
+
+# =============================================================================
+# Logging (debug WebSocket)
+# =============================================================================
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'ia_chat': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}

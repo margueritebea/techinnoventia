@@ -25,44 +25,30 @@ load_dotenv(BASE_DIR / '.env')
 # ============================================================================
 # MODE DEBUG
 # ============================================================================
-
-# DEBUG DÉSACTIVÉ - Obligatoire en production !
-# Ne JAMAIS activer DEBUG=True en production (fuite d'informations sensibles)
 DEBUG = False
 
 # ============================================================================
 # CLÉS SECRÈTES
 # ============================================================================
-
-# Clé secrète depuis les variables d'environnement
-# IMPORTANT : Générer une nouvelle clé unique pour la production !
 # Commande : python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'CHANGE_ME_IN_PRODUCTION')
 
-# Vérification de sécurité
 if SECRET_KEY == 'CHANGE_ME_IN_PRODUCTION':
-    raise ValueError("⚠️ SECRET_KEY n'est pas définie ! Définir DJANGO_SECRET_KEY dans les variables d'environnement.")
+    raise ValueError("SECRET_KEY n'est pas définie ! Définir DJANGO_SECRET_KEY dans les variables d'environnement.")
 
 # ============================================================================
 # HOSTS AUTORISÉS
 # ============================================================================
 
 # Liste des domaines autorisés à accéder à l'application
-# ⚠️ IMPORTANT : Remplacer par vos vrais domaines de production
+# IMPORTANT : Remplacer par vos vrais domaines de production
 ALLOWED_HOSTS = [
     'drbea224.pythonanywhere.com',
-    'votre-domaine.com',
-    'www.votre-domaine.com',
 ]
-
-# Récupération depuis variable d'environnement (optionnel)
-# ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 
 # ============================================================================
 # BASE DE DONNÉES
 # ============================================================================
-
-# PostgreSQL recommandé pour la production (performances et fiabilité)
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
@@ -86,27 +72,12 @@ DATABASES = {
     }
 }
 
-
-# Alternative : SQLite en production
-# ⚠️ NON RECOMMANDÉ pour sites avec trafic important ou multiples workers
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
 # ============================================================================
 # CORS (Cross-Origin Resource Sharing)
 # ============================================================================
 
 # Origines autorisées pour les requêtes AJAX en production
-# ⚠️ Restreindre aux domaines de votre frontend uniquement
-CORS_ALLOWED_ORIGINS = [
-    'https://votre-domaine.com',
-    'https://www.votre-domaine.com',
-    'https://app.votre-domaine.com',  # Si sous-domaine pour le frontend
-]
+CORS_ALLOWED_ORIGINS = []
 
 # Permet l'envoi de cookies avec les requêtes CORS
 CORS_ALLOW_CREDENTIALS = True
@@ -114,21 +85,16 @@ CORS_ALLOW_CREDENTIALS = True
 # ============================================================================
 # SÉCURITÉ DES COOKIES (Nécessite HTTPS !)
 # ============================================================================
-
-# Cookies de session - HTTPS uniquement
 SESSION_COOKIE_SECURE = True  # Cookie envoyé uniquement via HTTPS
 SESSION_COOKIE_SAMESITE = 'None'  # Nécessaire pour les requêtes cross-origin
 SESSION_COOKIE_HTTPONLY = True  # Protection XSS (non accessible en JavaScript)
 
-# Cookies CSRF - HTTPS uniquement
 CSRF_COOKIE_SECURE = True  # Cookie CSRF uniquement via HTTPS
 CSRF_COOKIE_SAMESITE = 'None'  # Nécessaire pour les requêtes cross-origin
 CSRF_COOKIE_HTTPONLY = False  # CSRF doit être accessible en JavaScript pour les requêtes AJAX
 
 # Domaines de confiance pour CSRF (Django 4.0+)
 CSRF_TRUSTED_ORIGINS = [
-    'https://votre-domaine.com',
-    'https://www.votre-domaine.com',
     'https://drbea224.pythonanywhere.com',
 ]
 
@@ -284,11 +250,11 @@ EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@votre-domaine.com')
-SERVER_EMAIL = os.environ.get('SERVER_EMAIL', 'server@votre-domaine.com')  # Pour les emails d'erreur
+SERVER_EMAIL = os.environ.get('SERVER_EMAIL', 'server@votre-domaine.com')
 
 # Liste des administrateurs (recevront les emails d'erreur)
 ADMINS = [
-    ('Votre Nom', os.environ.get('ADMIN_EMAIL', 'admin@votre-domaine.com')),
+    ('PEVE Beavogui', os.environ.get('ADMIN_EMAIL', 'beavoguimaximeakoi@gmail.com')),
 ]
 MANAGERS = ADMINS  # Les managers reçoivent les notifications de liens cassés (404)
 
