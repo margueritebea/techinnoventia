@@ -41,12 +41,9 @@ shell:
 # ============================================================================
 # ENVIRONNEMENT DE PRODUCTION
 # ============================================================================
-
-# Appliquer les migrations (production)
 migrate-prod:
 	$(MANAGE) migrate --settings=config.settings
 
-# Créer les fichiers de migration (production)
 migrations-prod:
 	$(MANAGE) makemigrations --settings=config.settings
 
@@ -103,46 +100,39 @@ clean-all: clean clean-venv
 # ============================================================================
 # DÉVELOPPEMENT
 # ============================================================================
-
-# Créer une nouvelle application Django
 startapp:
 	@read -p "Nom de la nouvelle app: " app_name; \
 	$(MANAGE) startapp $$app_name --settings=config.dev_settings
-
-# Afficher les URLs du projet
-show-urls:
-	$(MANAGE) show_urls --settings=config.dev_settings
 
 # Créer un fichier .env à partir de .env.example
 env:
 	@if [ ! -f .env ]; then \
 		cp .env.example .env; \
-		echo "✅ Fichier .env créé ! N'oubliez pas de le remplir avec vos valeurs."; \
+		echo " Fichier .env créé ! N'oubliez pas de le remplir avec vos valeurs."; \
 	else \
-		echo "⚠️  Le fichier .env existe déjà."; \
+		echo " Le fichier .env existe déjà."; \
 	fi
 
 # ============================================================================
 # BASE DE DONNÉES
 # ============================================================================
-
-# Réinitialiser la base de données (dev) - ⚠️ DANGER : supprime toutes les données !
+# Réinitialiser la base de données (dev) -  DANGER : supprime toutes les données !
 reset-db:
-	@echo "⚠️  Cette commande va SUPPRIMER toutes les données !"
+	@echo " Cette commande va SUPPRIMER toutes les données !"
 	@read -p "Voulez-vous continuer ? (yes/no): " confirm; \
 	if [ "$$confirm" = "yes" ]; then \
 		rm -f src/db.sqlite3; \
 		$(MANAGE) migrate --settings=config.dev_settings; \
-		echo "✅ Base de données réinitialisée !"; \
+		echo " Base de données réinitialisée !"; \
 	else \
-		echo "❌ Opération annulée."; \
+		echo " Opération annulée."; \
 	fi
 
 # Créer une sauvegarde de la base de données
 backup-db:
 	@mkdir -p backups
 	@cp src/db.sqlite3 backups/db_backup_$$(date +%Y%m%d_%H%M%S).sqlite3
-	@echo "✅ Sauvegarde créée dans backups/"
+	@echo " Sauvegarde créée dans backups/"
 
 # ============================================================================
 # QUALITÉ DU CODE
@@ -153,7 +143,7 @@ format:
 	@if [ -f $(VENV)/bin/black ]; then \
 		$(VENV)/bin/black src/; \
 	else \
-		echo "❌ Black n'est pas installé. Installez-le avec: pip install black"; \
+		echo " Black n'est pas installé. Installez-le avec: pip install black"; \
 	fi
 
 # Linter avec flake8 (si installé)
@@ -161,7 +151,7 @@ lint:
 	@if [ -f $(VENV)/bin/flake8 ]; then \
 		$(VENV)/bin/flake8 src/; \
 	else \
-		echo "❌ Flake8 n'est pas installé. Installez-le avec: pip install flake8"; \
+		echo " Flake8 n'est pas installé. Installez-le avec: pip install flake8"; \
 	fi
 
 # ============================================================================
@@ -200,10 +190,10 @@ help:
 	@echo "  make clean-all          - Nettoyage complet"
 	@echo ""
 	@echo "🗄️  BASE DE DONNÉES"
-	@echo "  make reset-db           - Réinitialiser la DB (⚠️ supprime les données)"
+	@echo "  make reset-db           - Réinitialiser la DB ( supprime les données)"
 	@echo "  make backup-db          - Créer une sauvegarde de la DB"
 	@echo ""
-	@echo "✨ AUTRES"
+	@echo " AUTRES"
 	@echo "  make env                - Créer le fichier .env"
 	@echo "  make format             - Formater le code avec black"
 	@echo "  make lint               - Linter avec flake8"

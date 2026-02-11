@@ -12,7 +12,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
+    {% block extra_head %}{% endblock %}
     <style>
         body { font-family: 'Inter', sans-serif; }
         [x-cloak] { display: none !important; }
@@ -78,21 +78,28 @@
                     });
 
                     if (!response.ok) {
+                        console.log('❌ Non authentifié - Statut:', response.status);
                         this.user = null;
                         return;
                     }
 
                     const data = await response.json();
-                    console.log("data: " + data)
+                    console.log('✅ Réponse check-auth:', data); // ← Correction ici
+                    
                     if (data.authenticated) {
                         this.user = data.user;
                         window.user = data.user; // Disponible globalement
+                        console.log('👤 Utilisateur connecté:', this.user);
+                    } else {
+                        console.log('❌ authenticated = false');
+                        this.user = null;
                     }
                 } catch (error) {
-                    console.error('Erreur de vérification auth:', error);
+                    console.error('💥 Erreur de vérification auth:', error);
                     this.user = null;
                 }
             },
+
 
             async logout() {
                 try {
