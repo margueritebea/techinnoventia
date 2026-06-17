@@ -31,6 +31,17 @@
           <p class="text-xs text-slate-400">Aucune conversation</p>
         </div>
       </div>
+
+      <!-- Model selector -->
+      <div class="border-t border-slate-100 p-3" x-show="models.length > 0">
+        <label class="text-[11px] font-medium text-slate-400 uppercase tracking-wider block mb-1.5">Modèle</label>
+        <select x-model="selectedModel" @change="changeModel(selectedModel)"
+                class="w-full text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all">
+          <template x-for="m in models" :key="m.key">
+            <option :value="m.key" x-text="m.name"></option>
+          </template>
+        </select>
+      </div>
     </div>
 
     <!-- Main chat area -->
@@ -93,7 +104,12 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/></svg>
           </button>
         </form>
-        <p class="text-[10px] text-slate-400 mt-1.5 text-center" x-text="connected ? 'Connecté' : 'Déconnecté'"></p>
+        <p class="text-[10px] text-slate-400 mt-1.5 text-center">
+          <span x-text="connected ? 'Connecté' : 'Déconnecté'"></span>
+          <template x-if="connected && currentConversationId">
+            <span> · <span x-text="modelName(selectedModel)"></span></span>
+          </template>
+        </p>
       </div>
     </div>
 
@@ -143,13 +159,58 @@ document.addEventListener('alpine:init', () => {
     connected: false,
     ws: null,
     showSidebar: false,
+    models: [],
+    selectedModel: 'llama3',
 
     async init() {
-      await this.loadConversations();
+      await Promise.all([
+        this.loadConversations(),
+        this.loadModels(),
+        this.loadPreferences(),
+      ]);
       if (this.conversations.length > 0) {
         this.connect(this.conversations[0].id);
       } else {
         this.connect(null);
+      }
+    },
+
+    async loadModels() {
+      try {
+        const r = await fetch('/ia_chat/models/', { credentials: 'include' });
+        if (r.ok) {
+          const data = await r.json();
+          if (data.length > 0) {
+            this.models = data;
+            if (!data.find(m => m.key === this.selectedModel)) {
+              this.selectedModel = data[0].key;
+            }
+          }
+        }
+      } catch {}
+    },
+
+    async loadPreferences() {
+      try {
+        const r = await fetch('/ia_chat/preferences/', { credentials: 'include' });
+        if (r.ok) {
+          const prefs = await r.json();
+          if (prefs.default_model) this.selectedModel = prefs.default_model;
+        }
+      } catch {}
+    },
+
+    async changeModel(modelKey) {
+      this.selectedModel = modelKey;
+      if (this.currentConversationId) {
+        try {
+          await fetch(`/ia_chat/conversations/${this.currentConversationId}/`, {
+            method: 'PATCH',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+            body: JSON.stringify({ model_used: modelKey })
+          });
+        } catch {}
       }
     },
 
@@ -247,13 +308,15 @@ document.addEventListener('alpine:init', () => {
       const content = this.input.trim();
       if (!content || !this.ws || !this.connected) return;
       if (!this.currentConversationId) {
-        this.ws.send(JSON.stringify({ type: 'new_conversation' }));
+        this.ws.send(JSON.stringify({ type: 'new_conversation', model: this.selectedModel }));
       }
       this.ws.send(JSON.stringify({ type: 'message', content }));
       this.input = '';
     },
 
     switchConversation(id) {
+      const conv = this.conversations.find(c => c.id === id);
+      if (conv && conv.model_used) this.selectedModel = conv.model_used;
       this.connect(id);
     },
 
@@ -290,6 +353,11 @@ document.addEventListener('alpine:init', () => {
       if (diff < 3600) return `${Math.floor(diff/60)}min`;
       if (diff < 86400) return `${Math.floor(diff/3600)}h`;
       return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    },
+
+    modelName(key) {
+      const m = this.models.find(m => m.key === key);
+      return m ? m.name : key;
     },
 
     formatTime(dateStr) {
