@@ -1,9 +1,10 @@
 # authentication/serializers.py
-from rest_framework import serializers
-from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth import authenticate, get_user_model
 from django.utils.translation import gettext_lazy as _
-from .utils import generate_unique_username
+from rest_framework import serializers
+
 from .models import Profile
+from .utils import generate_unique_username
 
 User = get_user_model()
 
@@ -90,7 +91,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = "__all__"
         fields = [
             "id", "user", "avatar", "cover_image",
-            "reputation", "posts_count", "comments_count", 
+            "reputation", "posts_count", "comments_count",
             "github", "linkedin", "twitter",
             "email_notifications", "newsletter"
         ]

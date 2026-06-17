@@ -1,10 +1,8 @@
 # authentication/authentication.py
-from django.utils.translation import gettext_lazy as _
 from django.conf import settings
-
-from rest_framework_simplejwt.exceptions import InvalidToken
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 class CookieJWTAuthentication(JWTAuthentication):

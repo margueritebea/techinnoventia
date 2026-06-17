@@ -1,0 +1,32 @@
+Django>=5,<6
+python-dotenv
+dj-database-url
+
+
+# Django
+Django==5.0.1
+djangorestframework==3.14.0
+
+# Authentication
+django-allauth==0.61.1
+
+# Database
+#psycopg2-binary==2.9.9  # Pour PostgreSQL (optionnel)
+
+# Image handling
+#Pillow==10.2.0
+
+# Utils
+python-slugify==8.0.2
+python-decouple==3.8  # Pour les variables d'environnement
+
+# Development
+django-debug-toolbar==4.2.0
+django-extensions==3.2.3
+
+# Production
+gunicorn==21.2.0
+whitenoise==6.6.0  # Pour servir les fichiers statiques
+
+# Rich Text Editor
+django-tinymce==4.0.0

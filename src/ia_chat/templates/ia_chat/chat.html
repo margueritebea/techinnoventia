@@ -1,0 +1,371 @@
+{% extends 'base.html' %}
+{% block title %}IA Chat — TechInnoventia{% endblock %}
+{% block content %}
+<div class="h-[calc(100vh-3.5rem)] flex flex-col">
+  <div class="flex-1 flex max-w-6xl mx-auto w-full overflow-hidden" x-data="chatApp()">
+    <!-- Sidebar -->
+    <div class="w-64 lg:w-72 border-r border-slate-200 flex flex-col bg-white shrink-0 hidden md:flex">
+      <div class="p-3 border-b border-slate-100">
+        <button @click="newConversation()"
+                class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Nouvelle conversation
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-2 space-y-0.5">
+        <template x-for="conv in conversations" :key="conv.id">
+          <div @click="switchConversation(conv.id)"
+               class="flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors"
+               :class="conv.id === currentConversationId ? 'bg-blue-50 text-blue-700' : 'text-slate-700 hover:bg-slate-50'">
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium truncate" x-text="conv.title || 'Nouvelle conversation'"></p>
+              <p class="text-[11px] text-slate-400 truncate" x-text="timeAgo(conv.updated_at)"></p>
+            </div>
+            <button @click.stop="deleteConversation(conv.id)"
+                    class="shrink-0 ml-2 p-1 rounded hover:bg-slate-200/50 text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+        </template>
+        <div x-show="!loading && conversations.length === 0" class="text-center py-8">
+          <p class="text-xs text-slate-400">Aucune conversation</p>
+        </div>
+      </div>
+
+      <!-- Model selector -->
+      <div class="border-t border-slate-100 p-3" x-show="models.length > 0">
+        <label class="text-[11px] font-medium text-slate-400 uppercase tracking-wider block mb-1.5">Modèle</label>
+        <select x-model="selectedModel" @change="changeModel(selectedModel)"
+                class="w-full text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all">
+          <template x-for="m in models" :key="m.key">
+            <option :value="m.key" x-text="m.name"></option>
+          </template>
+        </select>
+      </div>
+    </div>
+
+    <!-- Main chat area -->
+    <div class="flex-1 flex flex-col bg-white min-w-0">
+      <!-- Mobile header -->
+      <div class="md:hidden flex items-center gap-2 p-3 border-b border-slate-100">
+        <button @click="showSidebar = !showSidebar" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <h1 class="font-semibold text-sm text-slate-800">IA Chat</h1>
+      </div>
+
+      <!-- Messages -->
+      <div class="flex-1 overflow-y-auto px-4 py-6 space-y-4" id="chatMessages" x-ref="messages">
+        <template x-for="msg in messages" :key="msg.id">
+          <div class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
+            <div class="max-w-[80%] md:max-w-[70%] rounded-2xl px-4 py-2.5"
+                 :class="msg.role === 'user' ? 'bg-blue-600 text-white rounded-br-md' : 'bg-slate-100 text-slate-800 rounded-bl-md'">
+              <p class="text-sm whitespace-pre-wrap" x-text="msg.content"></p>
+              <p class="text-[10px] mt-1 opacity-60" x-text="formatTime(msg.timestamp)"></p>
+            </div>
+          </div>
+        </template>
+
+        <!-- Streaming message -->
+        <template x-if="isStreaming">
+          <div class="flex justify-start">
+            <div class="max-w-[80%] md:max-w-[70%] rounded-2xl px-4 py-2.5 bg-slate-100 text-slate-800 rounded-bl-md">
+              <p class="text-sm whitespace-pre-wrap" x-text="streamingContent"></p>
+              <span class="inline-block w-1.5 h-4 bg-blue-600 animate-pulse ml-0.5"></span>
+            </div>
+          </div>
+        </template>
+
+        <div x-show="!loading && messages.length === 0 && !isStreaming" class="text-center py-16">
+          <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
+            <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+          </div>
+          <h2 class="text-base font-semibold text-slate-700 mb-1">IA Chat</h2>
+          <p class="text-xs text-slate-400">Posez une question ou démarrez une conversation</p>
+        </div>
+
+        <div x-show="loading" class="flex justify-center py-8">
+          <div class="w-6 h-6 border-3 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="border-t border-slate-200 p-4">
+        <form @submit.prevent="sendMessage()" class="flex items-end gap-2">
+          <div class="flex-1 relative">
+            <textarea x-model="input" @keydown.enter.prevent="sendMessage()"
+                      placeholder="Tapez votre message..."
+                      rows="1"
+                      class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm resize-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all max-h-32"
+                      :disabled="!connected"></textarea>
+          </div>
+          <button type="submit" :disabled="!input.trim() || !connected"
+                  class="shrink-0 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </form>
+        <p class="text-[10px] text-slate-400 mt-1.5 text-center">
+          <span x-text="connected ? 'Connecté' : 'Déconnecté'"></span>
+          <template x-if="connected && currentConversationId">
+            <span> · <span x-text="modelName(selectedModel)"></span></span>
+          </template>
+        </p>
+      </div>
+    </div>
+
+    <!-- Mobile sidebar overlay -->
+    <template x-if="showSidebar">
+      <div class="fixed inset-0 z-40 md:hidden">
+        <div @click="showSidebar = false" class="absolute inset-0 bg-black/20"></div>
+        <div class="absolute left-0 top-0 bottom-0 w-64 bg-white border-r border-slate-200 p-3">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-slate-800">Conversations</span>
+            <button @click="showSidebar = false" class="p-1 rounded hover:bg-slate-100 text-slate-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <button @click="newConversation(); showSidebar = false"
+                  class="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all mb-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Nouvelle conversation
+          </button>
+          <div class="space-y-0.5">
+            <template x-for="conv in conversations" :key="conv.id">
+              <div @click="switchConversation(conv.id); showSidebar = false"
+                   class="px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors"
+                   :class="conv.id === currentConversationId ? 'bg-blue-50 text-blue-700' : 'text-slate-700 hover:bg-slate-50'">
+                <p class="truncate font-medium" x-text="conv.title || 'Nouvelle conversation'"></p>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('chatApp', () => ({
+    conversations: [],
+    currentConversationId: null,
+    messages: [],
+    input: '',
+    loading: false,
+    isStreaming: false,
+    streamingContent: '',
+    connected: false,
+    ws: null,
+    showSidebar: false,
+    models: [],
+    selectedModel: 'llama3',
+
+    async init() {
+      await Promise.all([
+        this.loadConversations(),
+        this.loadModels(),
+        this.loadPreferences(),
+      ]);
+      if (this.conversations.length > 0) {
+        this.connect(this.conversations[0].id);
+      } else {
+        this.connect(null);
+      }
+    },
+
+    async loadModels() {
+      try {
+        const r = await fetch('/ia_chat/models/', { credentials: 'include' });
+        if (r.ok) {
+          const data = await r.json();
+          if (data.length > 0) {
+            this.models = data;
+            if (!data.find(m => m.key === this.selectedModel)) {
+              this.selectedModel = data[0].key;
+            }
+          }
+        }
+      } catch {}
+    },
+
+    async loadPreferences() {
+      try {
+        const r = await fetch('/ia_chat/preferences/', { credentials: 'include' });
+        if (r.ok) {
+          const prefs = await r.json();
+          if (prefs.default_model) this.selectedModel = prefs.default_model;
+        }
+      } catch {}
+    },
+
+    async changeModel(modelKey) {
+      this.selectedModel = modelKey;
+      if (this.currentConversationId) {
+        try {
+          await fetch(`/ia_chat/conversations/${this.currentConversationId}/`, {
+            method: 'PATCH',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+            body: JSON.stringify({ model_used: modelKey })
+          });
+        } catch {}
+      }
+    },
+
+    async loadConversations() {
+      try {
+        const r = await fetch('/ia_chat/conversations/', { credentials: 'include' });
+        if (r.ok) this.conversations = await r.json();
+      } catch {}
+    },
+
+    connect(conversationId) {
+      if (this.ws) this.ws.close();
+      this.currentConversationId = conversationId || null;
+      this.messages = [];
+      this.isStreaming = false;
+      this.streamingContent = '';
+
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const url = this.currentConversationId
+        ? `${protocol}//${location.host}/ws/chat/${this.currentConversationId}/`
+        : `${protocol}//${location.host}/ws/chat/`;
+
+      this.ws = new WebSocket(url);
+
+      this.ws.onopen = () => {
+        this.connected = true;
+      };
+
+      this.ws.onmessage = (e) => {
+        this.handleMessage(JSON.parse(e.data));
+      };
+
+      this.ws.onclose = () => {
+        this.connected = false;
+      };
+    },
+
+    handleMessage(data) {
+      switch (data.type) {
+        case 'connection_established':
+          this.currentConversationId = data.conversation_id;
+          if (this.messages.length === 0) {
+            this.ws.send(JSON.stringify({ type: 'load_history' }));
+          }
+          break;
+        case 'conversation_created':
+          this.currentConversationId = data.conversation_id;
+          this.loadConversations();
+          break;
+        case 'message_received':
+          this.messages.push({
+            id: data.message_id,
+            role: 'user',
+            content: data.content,
+            timestamp: data.timestamp
+          });
+          this.$nextTick(() => this.scrollToBottom());
+          break;
+        case 'assistant_thinking':
+          this.isStreaming = true;
+          this.streamingContent = '';
+          break;
+        case 'assistant_chunk':
+          this.streamingContent += data.content;
+          this.$nextTick(() => this.scrollToBottom());
+          break;
+        case 'assistant_complete':
+          this.isStreaming = false;
+          this.messages.push({
+            id: data.message_id,
+            role: 'assistant',
+            content: data.content,
+            timestamp: data.timestamp,
+            tokens_used: data.tokens_used,
+            generation_time: data.generation_time
+          });
+          this.streamingContent = '';
+          this.loadConversations();
+          this.$nextTick(() => this.scrollToBottom());
+          break;
+        case 'history_loaded':
+          this.messages = data.messages.map(m => ({
+            ...m,
+            timestamp: m.timestamp || m.created_at
+          }));
+          this.$nextTick(() => this.scrollToBottom());
+          break;
+        case 'error':
+          console.error('Chat error:', data.message);
+          break;
+      }
+    },
+
+    sendMessage() {
+      const content = this.input.trim();
+      if (!content || !this.ws || !this.connected) return;
+      if (!this.currentConversationId) {
+        this.ws.send(JSON.stringify({ type: 'new_conversation', model: this.selectedModel }));
+      }
+      this.ws.send(JSON.stringify({ type: 'message', content }));
+      this.input = '';
+    },
+
+    switchConversation(id) {
+      const conv = this.conversations.find(c => c.id === id);
+      if (conv && conv.model_used) this.selectedModel = conv.model_used;
+      this.connect(id);
+    },
+
+    newConversation() {
+      this.connect(null);
+      this.loadConversations();
+    },
+
+    async deleteConversation(id) {
+      if (!confirm('Supprimer cette conversation ?')) return;
+      try {
+        const r = await fetch(`/ia_chat/conversations/${id}/`, {
+          method: 'DELETE',
+          credentials: 'include',
+          headers: { 'X-CSRFToken': getCSRF() }
+        });
+        if (r.ok) {
+          this.conversations = this.conversations.filter(c => c.id !== id);
+          if (this.currentConversationId === id) this.newConversation();
+        }
+      } catch {}
+    },
+
+    scrollToBottom() {
+      const el = this.$refs.messages;
+      if (el) el.scrollTop = el.scrollHeight;
+    },
+
+    timeAgo(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      const diff = Math.floor((Date.now() - d) / 1000);
+      if (diff < 60) return "à l'instant";
+      if (diff < 3600) return `${Math.floor(diff/60)}min`;
+      if (diff < 86400) return `${Math.floor(diff/3600)}h`;
+      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    },
+
+    modelName(key) {
+      const m = this.models.find(m => m.key === key);
+      return m ? m.name : key;
+    },
+
+    formatTime(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    }
+  }));
+});
+</script>
+{% endblock %}

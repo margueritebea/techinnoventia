@@ -1,0 +1,28 @@
+target-version = "py314"
+line-length = 119
+extend-exclude = ["src/*/migrations/*"]
+
+[format]
+quote-style = "single"
+
+[lint]
+select = [
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes
+  "I",   # isort
+  "N",   # pep8-naming
+  "UP",  # pyupgrade
+  "RUF", # ruff-specific
+]
+ignore = [
+  "E501",   # line-too-long (géré par le formatter)
+  "N812",   # lowercase imported as non-lowercase (Django convention)
+  "RUF012", # mutable class attrs (standard Django pattern)
+]
+
+[lint.per-file-ignores]
+"src/*/migrations/*" = ["E", "W", "F", "I", "N", "UP", "RUF"]
+"src/config/asgi.py" = ["E402"]
+"src/config/dev_settings.py" = ["F403", "F405"]
+"src/config/settings.py" = ["F403", "F405"]

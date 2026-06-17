@@ -1,5 +1,7 @@
 from django.contrib import admin
-from article.models import Category, Tag, Article, ArticleSection
+
+from article.models import Article, ArticleSection, Category, Tag
+
 
 class ArticleSectionInline(admin.StackedInline):
     model = ArticleSection

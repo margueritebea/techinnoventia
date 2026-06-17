@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+{% block title %}Créer un article — TechInnoventia{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div x-data="articleEditor()" x-init="init()" class="min-h-screen bg-slate-50">
+
+  <!-- Sticky header -->
+  <div class="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <a href="{% url 'article:my_articles' %}" class="text-slate-400 hover:text-slate-700 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </a>
+        <div>
+          <h1 class="text-base font-bold text-slate-900">
+            <span x-show="!editMode">Nouvel article</span>
+            <span x-show="editMode">Modifier l'article</span>
+          </h1>
+          <p class="text-xs text-slate-400" x-show="article.status === 'draft'">Brouillon</p>
+          <p class="text-xs text-green-600" x-show="article.status === 'published'">Publie</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button @click="showPreview = !showPreview"
+                class="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">
+          <span x-text="showPreview ? 'Editeur' : 'Apercu'"></span>
+        </button>
+        <button @click="saveArticle('draft')"
+                :disabled="saving"
+                class="px-3 py-1.5 text-xs font-semibold bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 disabled:opacity-50 transition-colors">
+          <span x-show="!saving">Sauvegarder</span>
+          <span x-show="saving">Sauvegarde...</span>
+        </button>
+        <button @click="saveArticle('published')"
+                :disabled="saving || !isValid()"
+                class="px-4 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
+          <span x-show="article.status === 'published'">Mettre a jour</span>
+          <span x-show="article.status !== 'published'">Publier</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-6xl mx-auto p-6">
+    <div class="grid" :class="showPreview ? 'grid-cols-2 gap-6' : 'grid-cols-1 max-w-3xl mx-auto'">
+
+      <!-- EDITOR -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6">
+
+        <!-- Title -->
+        <div class="mb-5">
+          <label class="block text-sm font-bold text-slate-700 mb-1.5">Titre *</label>
+          <input type="text" x-model="article.title" placeholder="Un titre accrocheur..."
+                 class="w-full px-4 py-3 border border-slate-200 rounded-lg text-lg font-bold focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                 maxlength="255">
+          <p class="text-xs text-slate-400 mt-1" x-text="`${article.title.length}/255`"></p>
+        </div>
+
+        <!-- Excerpt -->
+        <div class="mb-5">
+          <label class="block text-sm font-bold text-slate-700 mb-1.5">Resume *</label>
+          <textarea x-model="article.excerpt" placeholder="Un resume accrocheur..." rows="3" maxlength="500"
+                    class="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all resize-none"></textarea>
+          <p class="text-xs text-slate-400 mt-1" x-text="`${article.excerpt.length}/500`"></p>
+        </div>
+
+        <!-- Category + Cover -->
+        <div class="grid grid-cols-2 gap-4 mb-5">
+          <div>
+            <label class="block text-sm font-bold text-slate-700 mb-1.5">Categorie *</label>
+            <select x-model="article.category_id" class="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-white text-sm">
+              <option value="">Selectionner...</option>
+              <template x-for="cat in categories" :key="cat.id">
+                <option :value="cat.id" x-text="cat.name" x-show="cat && cat.id"></option>
+              </template>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-bold text-slate-700 mb-1.5">Couverture</label>
+            <input type="file" @change="handleCoverUpload" accept="image/*"
+                   class="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm">
+          </div>
+        </div>
+
+        <!-- Cover preview -->
+        <div x-show="article.cover" class="mb-5">
+          <img :src="article.cover" class="w-full h-40 object-cover rounded-lg border border-slate-100">
+        </div>
+
+        <!-- SECTIONS -->
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <label class="text-sm font-bold text-slate-700">Contenu</label>
+            <button @click="addSection()" class="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-semibold hover:bg-blue-100 transition-colors">
+              + Section
+            </button>
+          </div>
+
+          <template x-for="(section, index) in article.sections" :key="index">
+            <div class="mb-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+
+              <!-- Section header -->
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-semibold text-slate-500">Section <span x-text="index + 1"></span></span>
+                <div class="flex items-center gap-1">
+                  <button @click="moveSection(index, -1)" x-show="index > 0" class="p-1 text-slate-400 hover:text-slate-700 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                  </button>
+                  <button @click="moveSection(index, 1)" x-show="index < article.sections.length - 1" class="p-1 text-slate-400 hover:text-slate-700 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                  </button>
+                  <button @click="removeSection(index)" class="p-1 text-red-400 hover:text-red-600 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <input type="text" x-model="section.title" placeholder="Titre de la section (optionnel)"
+                     class="w-full px-4 py-2 border border-slate-200 rounded-lg mb-3 text-sm font-semibold focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all">
+
+              <input type="file" @change="handleSectionImageUpload($event, index)" accept="image/*"
+                     class="w-full px-4 py-2 border border-slate-200 rounded-lg mb-3 text-sm">
+
+              <div x-show="section.image" class="mb-3">
+                <img :src="section.image" class="w-full h-28 object-cover rounded-lg mb-2 border border-slate-100">
+                <input type="text" x-model="section.image_caption" placeholder="Legende de l'image"
+                       class="w-full px-3 py-2 border border-slate-200 rounded text-sm">
+              </div>
+
+              <textarea x-model="section.content" placeholder="Redigez le contenu de cette section..."
+                        rows="6"
+                        class="w-full px-4 py-3 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"></textarea>
+            </div>
+          </template>
+
+          <div x-show="article.sections.length === 0" class="text-center py-10 text-slate-400">
+            <p class="text-sm">Aucune section. Cliquez sur "+ Section" pour commencer.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- PREVIEW -->
+      <div x-show="showPreview" class="bg-white rounded-xl border border-slate-200 p-6 sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
+        <div class="prose prose-slate max-w-none">
+
+          <div class="text-center mb-8">
+            <span x-show="article.category_id && categories.length > 0" class="inline-block px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-semibold">
+              <template x-for="cat in categories" :key="cat.id">
+                <span x-show="cat.id == article.category_id" x-text="cat.name"></span>
+              </template>
+            </span>
+            <h1 class="text-3xl font-extrabold text-slate-900 mt-4 mb-3" x-text="article.title || 'Titre de l\'article'"></h1>
+            <p class="text-lg text-slate-500" x-text="article.excerpt || 'Resume de l\'article...'"></p>
+          </div>
+
+          <div x-show="article.cover" class="mb-8">
+            <img :src="article.cover" class="w-full h-56 object-cover rounded-xl border border-slate-100">
+          </div>
+
+          <template x-for="(section, index) in article.sections" :key="index">
+            <div class="mb-8">
+              <h2 x-show="section.title" class="text-xl font-bold text-slate-800 mb-3" x-text="section.title"></h2>
+              <div x-show="section.image" class="mb-4">
+                <img :src="section.image" class="w-full rounded-lg border border-slate-100">
+                <p x-show="section.image_caption" class="text-sm text-slate-500 mt-2 italic text-center" x-text="section.image_caption"></p>
+              </div>
+              <p class="text-slate-700 leading-8 whitespace-pre-wrap" x-text="section.content || 'Contenu de la section...'"></p>
+            </div>
+          </template>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+function articleEditor() {
+    return {
+        article: {
+            title: '',
+            excerpt: '',
+            cover: null,
+            category_id: '',
+            tag_ids: [],
+            sections: [],
+            status: 'draft'
+        },
+        categories: [],
+        tags: [],
+        showPreview: true,
+        saving: false,
+        editMode: false,
+        articleSlug: null,
+
+        init() {
+            this.loadCategories();
+            this.loadTags();
+            {% if article %}
+            this.editMode = true;
+            this.articleSlug = '{{ article.slug }}';
+            this.loadArticle('{{ article.slug }}');
+            {% else %}
+            const urlParams = new URLSearchParams(window.location.search);
+            const slug = urlParams.get('edit');
+            if (slug) {
+                this.editMode = true;
+                this.articleSlug = slug;
+                this.loadArticle(slug);
+            }
+            {% endif %}
+        },
+
+        async loadCategories() {
+            try {
+                const response = await fetch('/article/api/categories/');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (Array.isArray(data)) {
+                        this.categories = data;
+                    } else if (data.results && Array.isArray(data.results)) {
+                        this.categories = data.results;
+                    } else {
+                        this.categories = [];
+                    }
+                } else {
+                    this.categories = [];
+                }
+            } catch (error) {
+                this.categories = [];
+            }
+        },
+
+        async loadTags() {
+            try {
+                const response = await fetch('/article/api/tags/');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (Array.isArray(data)) {
+                        this.tags = data;
+                    } else if (data.results && Array.isArray(data.results)) {
+                        this.tags = data.results;
+                    } else {
+                        this.tags = [];
+                    }
+                } else {
+                    this.tags = [];
+                }
+            } catch (error) {
+                this.tags = [];
+            }
+        },
+
+        async loadArticle(slug) {
+            try {
+                const response = await fetch(`/article/api/articles/${slug}/`);
+                if (response.ok) {
+                    const data = await response.json();
+                    this.article = {
+                        title: data.title,
+                        excerpt: data.excerpt,
+                        cover: data.cover,
+                        category_id: data.category?.id || '',
+                        tag_ids: data.tags.map(t => t.id),
+                        sections: data.sections || [],
+                        status: data.status
+                    };
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        },
+
+        addSection() {
+            this.article.sections.push({
+                position: this.article.sections.length,
+                title: '',
+                content: '',
+                image: null,
+                image_caption: ''
+            });
+        },
+
+        removeSection(index) {
+            if (confirm('Supprimer cette section ?')) {
+                this.article.sections.splice(index, 1);
+                this.updatePositions();
+            }
+        },
+
+        moveSection(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex >= 0 && newIndex < this.article.sections.length) {
+                const temp = this.article.sections[index];
+                this.article.sections[index] = this.article.sections[newIndex];
+                this.article.sections[newIndex] = temp;
+                this.updatePositions();
+            }
+        },
+
+        updatePositions() {
+            this.article.sections.forEach((section, index) => {
+                section.position = index;
+            });
+        },
+
+        handleCoverUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => { this.article.cover = e.target.result; };
+                reader.readAsDataURL(file);
+            }
+        },
+
+        handleSectionImageUpload(event, index) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => { this.article.sections[index].image = e.target.result; };
+                reader.readAsDataURL(file);
+            }
+        },
+
+        isValid() {
+            return this.article.title && this.article.excerpt && this.article.category_id;
+        },
+
+        async saveArticle(status) {
+            if (!this.isValid()) {
+                alert('Veuillez remplir les champs obligatoires');
+                return;
+            }
+            this.saving = true;
+            this.article.status = status;
+            try {
+                const url = this.editMode
+                    ? `/article/api/articles/${this.articleSlug}/`
+                    : '/article/api/articles/';
+                const method = this.editMode ? 'PUT' : 'POST';
+                const isBase64 = (v) => typeof v === 'string' && v.startsWith('data:');
+                const payload = {
+                    title:       this.article.title,
+                    excerpt:     this.article.excerpt,
+                    status:      this.article.status,
+                    category_id: this.article.category_id,
+                    tag_ids:     this.article.tag_ids,
+                    sections:    this.article.sections.map(s => {
+                        const sec = {
+                            position:      s.position,
+                            title:         s.title,
+                            content:       s.content,
+                            image_caption: s.image_caption,
+                        };
+                        if (s.id) sec.id = s.id;
+                        if (s.image && isBase64(s.image)) sec.image = s.image;
+                        return sec;
+                    }),
+                };
+                if (this.article.cover && isBase64(this.article.cover)) payload.cover = this.article.cover;
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.getCsrfToken()
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (status === 'published') {
+                        window.location.href = `/article/detail/${data.slug}/`;
+                    } else {
+                        this.articleSlug = data.slug;
+                        this.editMode = true;
+                        alert('Brouillon sauvegarde !');
+                    }
+                } else {
+                    const errorData = await response.json();
+                    const msg = Object.entries(errorData)
+                        .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : JSON.stringify(v)}`)
+                        .join('\n');
+                    alert('Erreur :\n' + msg);
+                }
+            } catch (error) {
+                alert('Erreur reseau');
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        getCsrfToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        }
+    }
+}
+</script>
+{% endblock %}

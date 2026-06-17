@@ -1,9 +1,7 @@
 # authentication/services.py
-from django.core.mail import send_mail
 from django.conf import settings
+from django.core.mail import send_mail
 from django.utils.translation import gettext_lazy as _
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
 
 
 def send_verification_email(user, code):
