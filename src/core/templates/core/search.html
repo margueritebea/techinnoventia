@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Recherche — TechInnoventia{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 pt-14 pb-10">
+
+  <h1 class="text-2xl font-extrabold text-slate-900 mb-2">Recherche</h1>
+  <form action="{% url 'core:search' %}" method="get" class="mb-8">
+    <div class="relative">
+      <input type="text" name="q" value="{{ query }}" placeholder="Rechercher dans les articles, forums, questions..."
+             autofocus
+             class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+    </div>
+  </form>
+
+  {% if query %}
+    {% with total=articles|length|add:topics|length|add:posts|length|add:questions|length|add:answers|length %}
+    <p class="text-sm text-slate-500 mb-6">{{ total }} résultat(s) pour "{{ query }}"</p>
+    {% endwith %}
+
+    {% if not articles and not topics and not posts and not questions and not answers %}
+    <div class="text-center py-16 border-2 border-dashed border-slate-200 rounded-xl">
+      <p class="text-slate-400 font-medium">Aucun résultat trouvé.</p>
+      <p class="text-slate-400 text-sm mt-1">Essayez avec d'autres mots-clés.</p>
+    </div>
+    {% endif %}
+
+    <div class="space-y-8">
+      {% if articles %}
+      <section>
+        <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Articles</h2>
+        <div class="space-y-2">
+          {% for a in articles %}
+          <a href="{% url 'article:detail' a.slug %}" class="block bg-white rounded-xl border border-slate-200/80 p-4 hover:border-slate-300 transition-all">
+            <p class="font-semibold text-slate-900 text-sm">{{ a.title }}</p>
+            <p class="text-xs text-slate-500 mt-1 line-clamp-2">{{ a.excerpt|truncatewords:20 }}</p>
+            <p class="text-[11px] text-slate-400 mt-1.5"><a href="{% url 'authentication:profile-page-user' a.author.username %}" class="hover:text-blue-600 transition-colors">{{ a.author.get_full_name|default:a.author.username }}</a> · {{ a.category.name|default:'' }}</p>
+          </a>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if topics %}
+      <section>
+        <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Forum — Sujets</h2>
+        <div class="space-y-2">
+          {% for t in topics %}
+          <a href="{% url 'forum:detail' t.slug %}" class="block bg-white rounded-xl border border-slate-200/80 p-4 hover:border-slate-300 transition-all">
+            <p class="font-semibold text-slate-900 text-sm">{{ t.title }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ t.content|striptags|truncatewords:20 }}</p>
+            <p class="text-[11px] text-slate-400 mt-1.5"><a href="{% url 'authentication:profile-page-user' t.author.username %}" class="hover:text-blue-600 transition-colors">{{ t.author.get_full_name|default:t.author.username }}</a> · {{ t.category.name }}</p>
+          </a>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if posts %}
+      <section>
+        <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Forum — Réponses</h2>
+        <div class="space-y-2">
+          {% for p in posts %}
+          <a href="{% url 'forum:detail' p.topic.slug %}" class="block bg-white rounded-xl border border-slate-200/80 p-4 hover:border-slate-300 transition-all">
+            <p class="font-semibold text-slate-900 text-sm">Re: {{ p.topic.title }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ p.content|striptags|truncatewords:20 }}</p>
+            <p class="text-[11px] text-slate-400 mt-1.5"><a href="{% url 'authentication:profile-page-user' p.author.username %}" class="hover:text-blue-600 transition-colors">{{ p.author.get_full_name|default:p.author.username }}</a></p>
+          </a>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if questions %}
+      <section>
+        <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Questions & Réponses</h2>
+        <div class="space-y-2">
+          {% for q in questions %}
+          <a href="{% url 'qa:detail' q.slug %}" class="block bg-white rounded-xl border border-slate-200/80 p-4 hover:border-slate-300 transition-all">
+            <p class="font-semibold text-slate-900 text-sm">{{ q.title }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ q.content|striptags|truncatewords:20 }}</p>
+            <p class="text-[11px] text-slate-400 mt-1.5"><a href="{% url 'authentication:profile-page-user' q.author.username %}" class="hover:text-blue-600 transition-colors">{{ q.author.get_full_name|default:q.author.username }}</a></p>
+          </a>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if answers %}
+      <section>
+        <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Q&A — Réponses</h2>
+        <div class="space-y-2">
+          {% for a in answers %}
+          <a href="{% url 'qa:detail' a.question.slug %}" class="block bg-white rounded-xl border border-slate-200/80 p-4 hover:border-slate-300 transition-all">
+            <p class="font-semibold text-slate-900 text-sm">Réponse à: {{ a.question.title }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ a.content|striptags|truncatewords:20 }}</p>
+            <p class="text-[11px] text-slate-400 mt-1.5"><a href="{% url 'authentication:profile-page-user' a.author.username %}" class="hover:text-blue-600 transition-colors">{{ a.author.get_full_name|default:a.author.username }}</a></p>
+          </a>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Questions & Réponses — TechInnoventia{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 pt-14 pb-10">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-3xl font-extrabold text-slate-900">Questions & Réponses</h1>
+      <p class="text-slate-500 mt-1">Posez vos questions, obtenez des réponses</p>
+    </div>
+    <a href="{% url 'qa:ask' %}"
+       class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Nouvelle question
+    </a>
+  </div>
+
+  <div class="flex flex-col lg:flex-row gap-8">
+
+    <!-- Main -->
+    <div class="flex-1 min-w-0">
+
+      <!-- Sort tabs -->
+      <div class="flex items-center gap-1 bg-slate-100 rounded-xl p-1 mb-6 text-sm w-fit">
+        <a href="{% url 'qa:list' %}{% if current_tag %}?tag={{ current_tag }}{% endif %}"
+           class="px-3 py-1.5 rounded-lg font-medium transition-colors {% if current_sort != 'votes' %}bg-white text-slate-800 shadow-sm{% else %}text-slate-500 hover:text-slate-700{% endif %}">
+          Récents
+        </a>
+        <a href="{% url 'qa:list' %}?sort=votes{% if current_tag %}&tag={{ current_tag }}{% endif %}"
+           class="px-3 py-1.5 rounded-lg font-medium transition-colors {% if current_sort == 'votes' %}bg-white text-slate-800 shadow-sm{% else %}text-slate-500 hover:text-slate-700{% endif %}">
+          Populaires
+        </a>
+      </div>
+
+      <!-- Questions list -->
+      <div class="space-y-3">
+        {% for question in questions %}
+        <a href="{% url 'qa:detail' question.slug %}" class="block bg-white rounded-xl border border-slate-200/80 hover:border-slate-300 transition-all p-4">
+          <div class="flex items-start gap-4">
+            <!-- Stats -->
+            <div class="flex items-center gap-3 text-xs flex-shrink-0">
+              <div class="text-center">
+                <div class="font-bold text-sm {% if question.vote_score > 0 %}text-green-600{% elif question.vote_score < 0 %}text-red-500{% else %}text-slate-400{% endif %}">{{ question.vote_score }}</div>
+                <div class="text-slate-400">votes</div>
+              </div>
+              <div class="text-center">
+                <div class="font-bold text-sm {% if question.is_resolved %}text-green-600{% else %}text-slate-400{% endif %}">{{ question.answers_count }}</div>
+                <div class="text-slate-400">réponses</div>
+              </div>
+              <div class="text-center">
+                <div class="font-bold text-sm text-slate-400">{{ question.views_count }}</div>
+                <div class="text-slate-400">vues</div>
+              </div>
+            </div>
+            <!-- Content -->
+            <div class="flex-1 min-w-0">
+              <h2 class="font-bold text-slate-900 leading-snug mb-1.5">{{ question.title }}</h2>
+              <p class="text-sm text-slate-500 line-clamp-2 leading-relaxed">{{ question.content|striptags|truncatewords:30 }}</p>
+              <div class="flex items-center gap-2 flex-wrap mt-2">
+                {% for tag in question.tags.all %}
+                <span class="px-2 py-0.5 rounded-md text-[11px] font-medium bg-blue-50 text-blue-700">{{ tag.name }}</span>
+                {% endfor %}
+              </div>
+              <div class="flex items-center gap-2 mt-3 text-xs text-slate-400">
+                <a href="{% url 'authentication:profile-page-user' question.author.username %}" class="font-medium text-slate-600 hover:text-blue-600 transition-colors">{{ question.author.get_full_name|default:question.author.username }}</a>
+                <span>posée {{ question.created_at|timesince }}</span>
+              </div>
+            </div>
+          </div>
+        </a>
+        {% empty %}
+        <div class="text-center py-12 border-2 border-dashed border-slate-200 rounded-xl">
+          <p class="text-slate-400 font-medium">Aucune question pour l'instant.</p>
+          <p class="text-slate-400 text-sm mt-1">Soyez le premier à poser une question !</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="w-full lg:w-64 flex-shrink-0">
+      <div class="bg-white rounded-xl border border-slate-200/80 p-4 sticky top-24">
+        <h3 class="text-sm font-bold text-slate-900 mb-3">Tags populaires</h3>
+        <div class="flex flex-wrap gap-1.5">
+          {% for tag in tags %}
+          <a href="{% url 'qa:list' %}?tag={{ tag.slug }}{% if current_sort == 'votes' %}&sort=votes{% endif %}"
+             class="px-2.5 py-1 rounded-md text-xs font-medium transition-colors {% if current_tag == tag.slug %}bg-blue-600 text-white{% else %}bg-slate-100 text-slate-600 hover:bg-blue-100 hover:text-blue-700{% endif %}">
+            {{ tag.name }}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

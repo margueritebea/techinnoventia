@@ -1,98 +1,424 @@
 {% extends "base.html" %}
-
-{% block title %}{{ article.title }} - TechInnoventia{% endblock %}
+{% load markdown_tags %}
+{% block title %}{{ article.title }} — TechInnoventia{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto pb-20">
+<div class="max-w-3xl mx-auto px-4 sm:px-6 pt-14 pb-10">
 
-    <header class="mb-12 text-center px-4">
-        <div class="flex items-center justify-center gap-2 mb-6">
-            <span class="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold uppercase tracking-wider">
-                {{ article.category.name }}
-            </span>
-            <span class="text-slate-400 text-sm">•</span>
-            <span class="text-slate-500 text-sm">{{ article.read_time }} min de lecture</span>
-        </div>
-
-        <h1 class="text-3xl md:text-5xl font-extrabold text-slate-900 mb-6 leading-tight">
-            {{ article.title }}
-        </h1>
-
-        <p class="text-xl text-slate-500 leading-relaxed max-w-2xl mx-auto mb-8">
-            {{ article.excerpt }}
-        </p>
-
-        <div class="flex items-center justify-center gap-4 border-t border-b border-slate-100 py-6 max-w-lg mx-auto">
-            <div class="flex items-center gap-3">
-                {% if article.author.profile.avatar %}
-                    <img src="{{ article.author.profile.avatar.url }}" class="w-12 h-12 rounded-full object-cover ring-2 ring-white shadow-sm">
-                {% else %}
-                    <div class="w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-lg">
-                        {{ article.author.username|slice:":1"|upper }}
-                    </div>
-                {% endif %}
-                <div class="text-left">
-                    <p class="font-bold text-slate-900">{{ article.author.get_full_name|default:article.author.username }}</p>
-                    <p class="text-xs text-slate-500">{{ article.published_at|date:"d F Y" }}</p>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    {% if article.cover %}
-    <div class="mb-16 -mx-4 md:-mx-0">
-        <img src="{{ article.cover.url }}" alt="{{ article.title }}" class="w-full h-[400px] md:h-[500px] object-cover md:rounded-2xl shadow-lg">
-    </div>
+  <!-- Breadcrumb -->
+  <nav class="flex items-center gap-2 text-xs text-slate-400 mb-8">
+    <a href="/" class="hover:text-blue-600 transition-colors">Accueil</a>
+    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    <a href="{% url 'article:list' %}" class="hover:text-blue-600 transition-colors">Articles</a>
+    {% if article.category %}
+    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    <a href="{% url 'article:list' %}?category={{ article.category.slug }}" class="hover:text-blue-600 transition-colors">{{ article.category.name }}</a>
     {% endif %}
+  </nav>
 
-    <article class="prose prose-lg prose-slate mx-auto px-4 md:px-0">
-
-        {% for section in article.sections.all %}
-        <div class="mb-12 section-block group">
-
-            {% if section.title %}
-            <h2 class="text-2xl md:text-3xl font-bold text-slate-800 mb-6 mt-8 flex items-center gap-3">
-                <span class="w-8 h-1 bg-blue-500 rounded-full hidden md:block"></span>
-                {{ section.title }}
-            </h2>
-            {% endif %}
-
-            {% if section.image %}
-            <figure class="my-8">
-                <img src="{{ section.image.url }}" alt="{{ section.image_caption|default:section.title }}" class="w-full rounded-xl shadow-md border border-slate-100">
-                {% if section.image_caption %}
-                <figcaption class="text-center text-sm text-slate-500 mt-2 italic">
-                    {{ section.image_caption }}
-                </figcaption>
-                {% endif %}
-            </figure>
-            {% endif %}
-
-            <div class="text-slate-700 leading-8">
-                {{ section.content|linebreaks }}
-            </div>
-        </div>
-        {% endfor %}
-
-    </article>
-
-    <div class="mt-16 pt-8 border-t border-slate-200 px-4 md:px-0">
-        <div class="flex flex-wrap gap-2 mb-8">
-            {% for tag in article.tags.all %}
-            <a href="#" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm hover:bg-slate-200 transition-colors">
-                #{{ tag.name }}
-            </a>
-            {% endfor %}
-        </div>
-
-        <div class="bg-blue-50 rounded-2xl p-8 text-center border border-blue-100">
-            <h3 class="font-bold text-xl text-blue-900 mb-2">Cet article vous a plu ?</h3>
-            <p class="text-blue-700 mb-4">Rejoignez la discussion dans les commentaires.</p>
-            <button class="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors shadow-sm">
-                Voir les commentaires ({{ article.comments_count }})
-            </button>
-        </div>
+  <!-- Header -->
+  <header class="mb-10">
+    <div class="flex items-center gap-2 flex-wrap mb-5">
+      {% if article.category %}
+      <a href="{% url 'article:list' %}?category={{ article.category.slug }}"
+         class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors">
+        {{ article.category.name }}
+      </a>
+      {% endif %}
+      {% if article.is_trending %}
+      <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-orange-50 text-orange-600">Tendance</span>
+      {% endif %}
+      <span class="text-xs text-slate-400">{{ article.read_time }} min de lecture</span>
     </div>
+
+    <h1 class="text-3xl md:text-4xl font-extrabold text-slate-900 leading-tight tracking-tight mb-5">
+      {{ article.title }}
+    </h1>
+
+    <p class="text-xl text-slate-500 leading-relaxed mb-7 font-light">
+      {{ article.excerpt }}
+    </p>
+
+    <!-- Author + meta + like -->
+    <div class="flex items-center gap-4 py-5 border-y border-slate-200">
+      <div class="flex items-center gap-3">
+        <a href="{% url 'authentication:profile-page-user' article.author.username %}">
+          {% if article.author.profile.avatar %}
+            <img src="{{ article.author.profile.avatar.url }}"
+                 class="w-11 h-11 rounded-full object-cover ring-2 ring-white shadow-sm">
+          {% else %}
+            <div class="w-11 h-11 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-base">
+              {{ article.author.username|slice:":1"|upper }}
+            </div>
+          {% endif %}
+        </a>
+        <div>
+          <a href="{% url 'authentication:profile-page-user' article.author.username %}" class="font-bold text-slate-900 text-sm hover:text-blue-600 transition-colors">{{ article.author.get_full_name|default:article.author.username }}</a>
+          <p class="text-xs text-slate-400">{{ article.published_at|date:"d F Y" }}</p>
+        </div>
+      </div>
+
+      <div class="ml-auto flex items-center gap-3 text-sm" x-data="likeButton('{{ article.slug }}', {{ article.likes_count }})">
+        <button @click="toggle()" :disabled="loading"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors"
+                :class="isLiked ? 'border-red-200 bg-red-50 text-red-600' : 'border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600'">
+          <svg class="w-4 h-4" :fill="isLiked ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+          </svg>
+          <span x-text="likesCount" class="font-semibold text-xs"></span>
+        </button>
+        <a href="#comments" class="inline-flex items-center gap-1.5 text-slate-400 hover:text-blue-600 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+          <span class="font-semibold text-xs" x-text="totalComments"></span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  {% if article.cover %}
+  <div class="mb-12 -mx-4 sm:mx-0">
+    <img src="{{ article.cover.url }}" alt="{{ article.title }}"
+         class="w-full h-72 md:h-96 object-cover sm:rounded-2xl shadow-sm border border-slate-100">
+  </div>
+  {% endif %}
+
+  <div class="article-body max-w-none text-slate-800 leading-relaxed space-y-8">
+    {% for section in article.sections.all %}
+    <div>
+      {% if section.title %}
+      <h2 class="text-2xl font-bold text-slate-900 mb-4">{{ section.title }}</h2>
+      {% endif %}
+      {% if section.image %}
+      <figure class="my-8">
+        <img src="{{ section.image.url }}" alt="{{ section.image_caption|default:section.title }}"
+             class="w-full rounded-2xl shadow-sm border border-slate-100">
+        {% if section.image_caption %}
+        <figcaption class="text-center text-sm text-slate-400 mt-3 italic">{{ section.image_caption }}</figcaption>
+        {% endif %}
+      </figure>
+      {% endif %}
+      <div class="markdown-content">{{ section.content|markdown }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if article.tags.all %}
+  <div class="flex flex-wrap gap-2 mt-12 pt-8 border-t border-slate-200">
+    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider self-center mr-1">Tags :</span>
+    {% for tag in article.tags.all %}
+    <a href="{% url 'article:list' %}?tag={{ tag.slug }}"
+       class="px-3 py-1.5 bg-slate-100 hover:bg-blue-100 text-slate-600 hover:text-blue-700 rounded-full text-xs font-semibold transition-all">#{{ tag.name }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- COMMENTS -->
+  <div id="comments" class="mt-16"
+       x-data="commentSystem('{{ article.slug }}')"
+       x-init="init()">
+
+    <div class="flex items-center justify-between mb-8">
+      <h2 class="text-lg font-bold text-slate-900">
+        Commentaires
+        <span class="text-slate-400 font-normal" x-text="`(${comments.length})`"></span>
+      </h2>
+    </div>
+
+    <!-- Comment form -->
+    <div class="bg-white rounded-xl border border-slate-200/80 p-4 mb-8">
+      <template x-if="$store.auth?.user">
+        <div>
+          <textarea x-model="newComment" placeholder="Ajoutez un commentaire... (Markdown supporté)" rows="3" maxlength="1000"
+                    class="w-full px-4 py-3 border border-slate-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"></textarea>
+          <div class="flex items-center justify-between mt-3">
+            <span class="text-xs text-slate-400" x-text="`${newComment.length}/1000`"></span>
+            <button @click="addComment()" :disabled="!newComment.trim() || saving"
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50 transition-colors">
+              <span x-show="!saving">Commenter</span>
+              <span x-show="saving">Envoi...</span>
+            </button>
+          </div>
+        </div>
+      </template>
+      <template x-if="!$store.auth?.user">
+        <p class="text-sm text-slate-500 text-center py-3">
+          <a href="{% url 'authentication:login' %}" class="text-blue-600 hover:underline font-medium">Connectez-vous</a>
+          pour laisser un commentaire.
+        </p>
+      </template>
+    </div>
+
+    <!-- Comments list -->
+    <div x-show="loading" class="flex justify-center py-12">
+      <div class="w-6 h-6 border-3 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+    </div>
+
+    <div x-show="!loading && comments.length === 0" class="text-center py-12 border-2 border-dashed border-slate-200 rounded-xl">
+      <p class="text-slate-400 font-medium">Aucun commentaire pour l'instant.</p>
+      <p class="text-slate-400 text-sm mt-1">Soyez le premier a donner votre avis !</p>
+    </div>
+
+    <div x-show="!loading" class="space-y-6">
+      <template x-for="comment in comments" :key="comment.id">
+        <div class="bg-white rounded-xl border border-slate-200/80 p-4">
+          <!-- Comment header -->
+          <div class="flex items-start gap-3 mb-3">
+            <a :href="`/users/profile/${comment.author_username}/`">
+              <template x-if="comment.author_avatar">
+                <img :src="comment.author_avatar" class="w-8 h-8 rounded-full object-cover shrink-0">
+              </template>
+              <template x-if="!comment.author_avatar">
+                <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs shrink-0"
+                     x-text="comment.author_username?.charAt(0).toUpperCase()"></div>
+              </template>
+            </a>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <a :href="`/users/profile/${comment.author_username}/`" class="font-semibold text-sm text-slate-900 hover:text-blue-600 transition-colors" x-text="comment.author_name"></a>
+                <span class="text-xs text-slate-400" x-text="timeAgo(comment.created_at)"></span>
+                <span x-show="comment.is_edited" class="text-[10px] text-slate-400 italic">(modifie)</span>
+              </div>
+
+              <!-- Content / Edit form -->
+              <template x-if="editing !== comment.id">
+                <div class="markdown-content text-sm mt-1" x-html="comment.content_html"></div>
+              </template>
+              <template x-if="editing === comment.id">
+                <div class="mt-2">
+                  <textarea x-model="editContent" maxlength="1000" rows="3"
+                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"></textarea>
+                  <div class="flex items-center gap-2 mt-2">
+                    <button @click="saveEdit(comment.id)" :disabled="!editContent.trim()"
+                            class="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors">Sauvegarder</button>
+                    <button @click="cancelEdit()" class="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700 transition-colors">Annuler</button>
+                  </div>
+                </div>
+              </template>
+
+              <!-- Actions -->
+              <div class="flex items-center gap-3 mt-2">
+                <button @click="toggleCommentLike(comment.id)"
+                        class="inline-flex items-center gap-1 text-xs transition-colors"
+                        :class="comment.is_liked ? 'text-red-500' : 'text-slate-400 hover:text-red-500'">
+                  <svg class="w-3.5 h-3.5" :fill="comment.is_liked ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                  </svg>
+                  <span x-text="comment.likes_count || 0"></span>
+                </button>
+                <button @click="startReply(comment.id)" class="text-xs text-slate-400 hover:text-blue-600 transition-colors">Repondre</button>
+                <template x-if="$store.auth?.user?.id === comment.author">
+                  <div class="flex items-center gap-2 ml-auto">
+                    <button @click="startEdit(comment)" class="text-xs text-slate-400 hover:text-slate-700 transition-colors">Modifier</button>
+                    <button @click="deleteComment(comment.id)" class="text-xs text-red-400 hover:text-red-600 transition-colors">Supprimer</button>
+                  </div>
+                </template>
+              </div>
+
+              <!-- Reply form -->
+              <div x-show="replyTo === comment.id" class="mt-3">
+                <textarea x-model="replyContent" placeholder="Votre reponse..." rows="2" maxlength="1000"
+                          class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"></textarea>
+                <div class="flex items-center gap-2 mt-2">
+                  <button @click="addReply(comment.id)" :disabled="!replyContent.trim()"
+                          class="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors">Repondre</button>
+                  <button @click="cancelReply()" class="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700 transition-colors">Annuler</button>
+                </div>
+              </div>
+
+              <!-- Replies -->
+              <template x-if="comment.replies && comment.replies.length > 0">
+                <div class="mt-4 ml-6 space-y-3 pl-4 border-l-2 border-slate-100">
+                  <template x-for="reply in comment.replies" :key="reply.id">
+                    <div>
+                      <div class="flex items-start gap-2">
+                        <a :href="`/users/profile/${reply.author_username}/`">
+                          <template x-if="reply.author_avatar">
+                            <img :src="reply.author_avatar" class="w-6 h-6 rounded-full object-cover shrink-0">
+                          </template>
+                          <template x-if="!reply.author_avatar">
+                            <div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-[10px] shrink-0"
+                                 x-text="reply.author_username?.charAt(0).toUpperCase()"></div>
+                          </template>
+                        </a>
+                        <div class="flex-1 min-w-0">
+                          <div class="flex items-center gap-2">
+                            <a :href="`/users/profile/${reply.author_username}/`" class="font-semibold text-xs text-slate-800 hover:text-blue-600 transition-colors" x-text="reply.author_name"></a>
+                            <span class="text-[10px] text-slate-400" x-text="timeAgo(reply.created_at)"></span>
+                          </div>
+                          <div class="markdown-content text-sm mt-0.5" x-html="reply.content_html"></div>
+                          <div class="flex items-center gap-3 mt-1">
+                            <button @click="toggleCommentLike(reply.id)"
+                                    class="inline-flex items-center gap-1 text-xs transition-colors"
+                                    :class="reply.is_liked ? 'text-red-500' : 'text-slate-400 hover:text-red-500'">
+                              <svg class="w-3 h-3" :fill="reply.is_liked ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                              </svg>
+                              <span x-text="reply.likes_count || 0"></span>
+                            </button>
+                            <template x-if="$store.auth?.user?.id === reply.author">
+                              <button @click="deleteComment(reply.id)" class="text-[10px] text-red-400 hover:text-red-600 transition-colors">Supprimer</button>
+                            </template>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
 
 </div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('likeButton', (slug, initialCount) => ({
+    isLiked: false,
+    likesCount: initialCount,
+    loading: false,
+    async init() {
+      const auth = Alpine.store('auth');
+      if (auth?.user) {
+        try {
+          const r = await fetch(`/article/api/articles/${slug}/`, { credentials: 'include' });
+          const d = await r.json();
+          this.isLiked = d.is_liked || false;
+        } catch {}
+      }
+    },
+    async toggle() {
+      const auth = Alpine.store('auth');
+      if (!auth?.user) { window.location.href = '/login/'; return; }
+      this.loading = true;
+      try {
+        const r = await fetch(`/article/api/${slug}/like/`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCSRF() },
+          credentials: 'include'
+        });
+        const d = await r.json();
+        this.isLiked = d.is_liked;
+        this.likesCount = d.likes_count;
+      } catch {}
+      finally { this.loading = false; }
+    }
+  }));
+
+  Alpine.data('commentSystem', (slug) => ({
+    comments: [],
+    loading: true,
+    saving: false,
+    newComment: '',
+    replyTo: null,
+    replyContent: '',
+    editing: null,
+    editContent: '',
+    totalComments: {{ article.comments_count }},
+
+    async init() {
+      await this.loadComments();
+    },
+
+    async loadComments() {
+      this.loading = true;
+      try {
+        const r = await fetch(`/article/api/comments/?article=${slug}`, { credentials: 'include' });
+        const d = await r.json();
+        this.comments = d.results || d || [];
+        this.totalComments = d.count || this.comments.length;
+      } catch { this.comments = []; }
+      finally { this.loading = false; }
+    },
+
+    async addComment() {
+      const auth = Alpine.store('auth');
+      if (!auth?.user) { window.location.href = '/login/'; return; }
+      if (!this.newComment.trim()) return;
+      this.saving = true;
+      try {
+        const r = await fetch('/article/api/comments/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+          credentials: 'include',
+          body: JSON.stringify({ article: slug, content: this.newComment.trim() })
+        });
+        if (r.ok) { this.newComment = ''; await this.loadComments(); }
+      } catch {}
+      finally { this.saving = false; }
+    },
+
+    startReply(id) { this.replyTo = id; this.replyContent = ''; },
+    cancelReply() { this.replyTo = null; this.replyContent = ''; },
+
+    async addReply(parentId) {
+      const auth = Alpine.store('auth');
+      if (!auth?.user) { window.location.href = '/login/'; return; }
+      if (!this.replyContent.trim()) return;
+      try {
+        const r = await fetch('/article/api/comments/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+          credentials: 'include',
+          body: JSON.stringify({ article: slug, content: this.replyContent.trim(), parent: parentId })
+        });
+        if (r.ok) { this.replyContent = ''; this.replyTo = null; await this.loadComments(); }
+      } catch {}
+    },
+
+    startEdit(comment) { this.editing = comment.id; this.editContent = comment.content; },
+    cancelEdit() { this.editing = null; this.editContent = ''; },
+
+    async saveEdit(commentId) {
+      if (!this.editContent.trim()) return;
+      try {
+        const r = await fetch(`/article/api/comments/${commentId}/`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+          credentials: 'include',
+          body: JSON.stringify({ content: this.editContent.trim() })
+        });
+        if (r.ok) { this.editing = null; await this.loadComments(); }
+      } catch {}
+    },
+
+    async deleteComment(commentId) {
+      if (!confirm('Supprimer ce commentaire ?')) return;
+      try {
+        const r = await fetch(`/article/api/comments/${commentId}/`, {
+          method: 'DELETE',
+          headers: { 'X-CSRFToken': getCSRF() },
+          credentials: 'include'
+        });
+        if (r.ok) await this.loadComments();
+      } catch {}
+    },
+
+    async toggleCommentLike(commentId) {
+      const auth = Alpine.store('auth');
+      if (!auth?.user) { window.location.href = '/login/'; return; }
+      try {
+        const r = await fetch(`/article/api/comments/${commentId}/toggle_like/`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCSRF() },
+          credentials: 'include'
+        });
+        if (r.ok) await this.loadComments();
+      } catch {}
+    },
+
+    timeAgo(d) {
+      const diff = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
+      if (diff < 60) return "a l'instant";
+      if (diff < 3600) return `${Math.floor(diff/60)} min`;
+      if (diff < 86400) return `${Math.floor(diff/3600)}h`;
+      return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    }
+  }));
+});
+</script>
+
 {% endblock %}
