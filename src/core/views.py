@@ -1,11 +1,13 @@
-from django.shortcuts import render
-from django.db.models import Count, Q, Exists, OuterRef
+from datetime import timedelta
 
 from django.contrib.auth import get_user_model
-from datetime import datetime, timedelta
+from django.db.models import Count, Exists, OuterRef, Q
+from django.shortcuts import render
 from django.utils import timezone
 
 from article.models import Article, Category
+from forum.models import Post, Topic
+from qa.models import Answer, Question
 
 User = get_user_model()
 
@@ -32,14 +34,14 @@ def home(request):
     total_articles = Article.objects.filter(status='published').count()
     total_categories = Category.objects.count()
     # Exemple statique pour "tutoriels" si tu n'as pas de type spécifique
-    total_tutos = Article.objects.filter(tags__name__iexact='tutoriel').count()
-    
+    Article.objects.filter(tags__name__iexact='tutoriel').count()
+
     data_stats = {
         'total_members': total_members,
         'total_articles': total_articles,
         'total_categories': total_categories,
         'total_tutos': Article.objects.filter(tags__name__iexact='tutoriel').count(),
-        'online': 12, # Valeur simulée pour l'instant
+        'online': User.objects.filter(last_login__gte=timezone.now() - timedelta(minutes=15)).count(),
         'new_articles': Article.objects.filter(status='published', created_at__date=timezone.now().date()).count()
     }
 
@@ -62,103 +64,38 @@ def home(request):
     return render(request, "core/index.html", context=data)
 
 
+def search(request):
+    query = request.GET.get('q', '').strip()
+    results = {'articles': [], 'topics': [], 'questions': [], 'query': query}
 
-# from django.shortcuts import render
-# from datetime import datetime, timedelta
-# from django.utils import timezone
-
-# # Vos stats existantes
-# stats = [
-#     {'value': '850+', 'label': 'Membres'},
-#     {'value': '120+', 'label': 'Articles'},
-#     {'value': '45', 'label': 'Tutoriels'},
-#     {'value': '12', 'label': 'Catégories'},
-# ]
-
-# # Mock data pour les articles
-# articles = [
-#     {
-#         'title': 'Comment maîtriser Django REST Framework en 2025',
-#         'slug': 'maitriser-django-rest-framework-2025',
-#         'excerpt': 'Découvrez les dernières techniques pour créer des API performantes avec Django REST Framework. De l\'authentification JWT aux serializers avancés...',
-#         'category': {'name': 'Django'},
-#         'is_trending': True,
-#         'published_at': datetime.now() - timedelta(days=2),
-#         'author': {
-#             'username': 'john_doe',
-#             'get_full_name': 'John Doe',
-#         },
-#         'read_time': 12,
-#         'likes_count': 245,
-#         'comments_count': 34,
-#     },
-#     {
-#         'title': 'Optimiser PostgreSQL pour vos applications Django',
-#         'slug': 'optimiser-postgresql-django',
-#         'excerpt': 'Apprenez à configurer PostgreSQL pour des performances optimales avec Django. Indexation, caching avec Redis et requêtes optimisées.',
-#         'category': {'name': 'Base de données'},
-#         'is_trending': False,
-#         'published_at': datetime.now() - timedelta(days=5),
-#         'author': {
-#             'username': 'jane_smith',
-#             'get_full_name': 'Jane Smith',
-#         },
-#         'read_time': 8,
-#         'likes_count': 156,
-#         'comments_count': 22,
-#     },
-#     {
-#         'title': 'React 19 : Nouvelles fonctionnalités à connaître',
-#         'slug': 'react-19-nouvelles-fonctionnalites',
-#         'excerpt': 'React 19 arrive avec des améliorations majeures : Server Components, Actions et bien plus. Guide complet pour migrer votre projet.',
-#         'category': {'name': 'React JS'},
-#         'is_trending': True,
-#         'published_at': datetime.now() - timedelta(days=1),
-#         'author': {
-#             'username': 'alex_martin',
-#             'get_full_name': 'Alex Martin',
-#         },
-#         'read_time': 15,
-#         'likes_count': 389,
-#         'comments_count': 67,
-#     },
-#     {
-#         'title': 'Déployer Django sur Fedora avec Apache et Redis',
-#         'slug': 'deployer-django-fedora-apache-redis',
-#         'excerpt': 'Tutoriel complet pour déployer votre application Django sur Fedora Linux avec Apache, PostgreSQL et Redis pour les tâches asynchrones.',
-#         'category': {'name': 'Déploiement'},
-#         'is_trending': False,
-#         'published_at': datetime.now() - timedelta(days=7),
-#         'author': {
-#             'username': 'dev_guy',
-#             'get_full_name': 'Developer Guinea',
-#         },
-#         'read_time': 18,
-#         'likes_count': 89,
-#         'comments_count': 15,
-#     },
-# ]
-
-# categories = [
-#     {'name': 'Django', 'count': 34},
-#     {'name': 'React JS', 'count': 27},
-#     {'name': 'Base de données', 'count': 19},
-#     {'name': 'Déploiement', 'count': 12},
-# ]
-
-
-# users = [
-#     {'username': 'MKalice_wonder', 'profile': {'role': 'Membre'}},
-#     {'username': 'bob_builder', 'profile': {'role': 'Modérateur'}},
-#     {'username': 'charlie_chaplin', 'profile': {'role': 'Administrateur'}},
-#     {'username': 'diana_prince', 'profile': {'role': 'Membre'}},
-# ]
-# def home(request):
-#     data = {
-#         "stats": stats,
-#         "articles": articles,
-#         "categories": categories,
-#         "active_users": users,
-#     }
-#     return render(request, "core/testindex.html", context=data)
+    if query and len(query) >= 2:
+        results['articles'] = (
+            Article.objects.filter(status='published')
+            .filter(Q(title__icontains=query) | Q(excerpt__icontains=query))
+            .select_related('author', 'category')
+            .distinct()[:5]
+        )
+        results['topics'] = (
+            Topic.objects.filter(is_approved=True)
+            .filter(Q(title__icontains=query) | Q(content__icontains=query))
+            .select_related('author', 'category')
+            .distinct()[:5]
+        )
+        results['posts'] = (
+            Post.objects.filter(is_approved=True, content__icontains=query)
+            .select_related('author', 'topic')
+            .distinct()[:5]
+        )
+        results['questions'] = (
+            Question.objects.filter(is_approved=True)
+            .filter(Q(title__icontains=query) | Q(content__icontains=query))
+            .select_related('author')
+            .distinct()[:5]
+        )
+        results['answers'] = (
+            Answer.objects.filter(is_approved=True, content__icontains=query)
+            .select_related('author', 'question')
+            .distinct()[:5]
+        )
+    return render(request, 'core/search.html', results)
 

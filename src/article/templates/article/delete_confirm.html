@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Supprimer l'article — TechInnoventia{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex items-center justify-center px-4 pt-16 pb-12">
+  <div class="max-w-md w-full bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+
+    <!-- Icon -->
+    <div class="flex justify-center mb-5">
+      <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+    </div>
+
+    <h2 class="text-xl font-bold text-slate-900 text-center mb-2">Supprimer l'article ?</h2>
+    <p class="text-slate-500 text-center text-sm mb-5">
+      Vous etes sur le point de supprimer :<br>
+      <span class="font-semibold text-slate-800">"{{ article.title }}"</span>
+    </p>
+
+    <!-- Warning -->
+    <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-5">
+      <div class="flex items-start gap-3">
+        <svg class="w-4 h-4 text-red-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <div class="text-sm text-red-800">
+          <p class="font-semibold mb-1">Cette action est irreversible</p>
+          <ul class="list-disc list-inside text-red-700 leading-relaxed">
+            <li>L'article sera definitivement supprime</li>
+            <li>Toutes les sections seront perdues</li>
+            <li>Les commentaires et likes seront supprimes</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="bg-slate-50 rounded-xl p-4 mb-6">
+      <div class="grid grid-cols-3 gap-4 text-center">
+        <div>
+          <p class="text-xl font-bold text-slate-900">{{ article.likes_count }}</p>
+          <p class="text-xs text-slate-500">Likes</p>
+        </div>
+        <div>
+          <p class="text-xl font-bold text-slate-900">{{ article.comments_count }}</p>
+          <p class="text-xs text-slate-500">Commentaires</p>
+        </div>
+        <div>
+          <p class="text-xl font-bold text-slate-900">{{ article.sections.count }}</p>
+          <p class="text-xs text-slate-500">Sections</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <form method="post" class="space-y-3">
+      {% csrf_token %}
+      <button type="submit"
+              class="w-full px-6 py-3 bg-red-600 text-white rounded-xl font-semibold text-sm hover:bg-red-700 transition-colors flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+        Oui, supprimer definitivement
+      </button>
+      <a href="{% url 'article:my_articles' %}"
+         class="w-full px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-semibold text-sm hover:bg-slate-200 transition-colors flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        Non, annuler
+      </a>
+    </form>
+
+    <div class="text-center mt-5">
+      <a href="{% url 'article:edit' article.slug %}"
+         class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+        Plutot modifier l'article
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

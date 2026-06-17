@@ -20,27 +20,19 @@ DEBUG = True
 # ============================================================================
 # CLÉS SECRÈTES
 # ============================================================================
-
-# Clé secrète pour le développement
-# ⚠️ À REMPLACER par une vraie clé en production (voir settings.py)
 SECRET_KEY = 'django-insecure-$f&h(*z5a^rxuj3_5+qjuj2%t#wa%bfn=j152!kjx9@1j+!$7l'
 
 # ============================================================================
 # HOSTS AUTORISÉS
 # ============================================================================
-
-# En développement, on accepte localhost et 127.0.0.1
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '[::1]',  # IPv6 localhost
 ]
 
 # ============================================================================
 # BASE DE DONNÉES
 # ============================================================================
-
-# SQLite pour le développement (simple et rapide, pas de serveur DB requis)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -52,13 +44,10 @@ DATABASES = {
 # CORS (Cross-Origin Resource Sharing)
 # ============================================================================
 
-# Origines autorisées pour les requêtes AJAX en développement
+# Origines autorisées pour les requêtes AJAX
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:8000',
-    'http://127.0.0.1:8000',
-    'http://localhost:3000',  # Si frontend React/Vue sur port 3000
     'http://127.0.0.1:3000',
-    'http://localhost:5173',  # Si frontend Vite sur port 5173
     'http://127.0.0.1:5173',
 ]
 
@@ -79,18 +68,15 @@ CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 # ============================================================================
 # EMAIL BACKEND
 # ============================================================================
-
-# En développement, affiche les emails dans la console au lieu de les envoyer
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # ============================================================================
 # LOGGING (Détaillé pour le développement)
 # ============================================================================
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    
+
     # Formats de log
     'formatters': {
         'verbose': {
@@ -102,7 +88,7 @@ LOGGING = {
             'style': '{',
         },
     },
-    
+
     # Handlers (où vont les logs)
     'handlers': {
         'console': {
@@ -110,13 +96,13 @@ LOGGING = {
             'formatter': 'verbose',
         },
     },
-    
+
     # Logger racine
     'root': {
         'handlers': ['console'],
         'level': 'INFO',
     },
-    
+
     # Loggers spécifiques
     'loggers': {
         # Logs des sessions (utile pour déboguer l'authentification)
@@ -125,28 +111,28 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
-        
+
         # Logs des requêtes SQL (mettre à DEBUG pour voir toutes les requêtes)
         'django.db.backends': {
             'handlers': ['console'],
             'level': 'INFO',  # Changer en 'DEBUG' pour voir les requêtes SQL
             'propagate': False,
         },
-        
+
         # Logs de votre app authentication
         'authentication': {
             'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': False,
         },
-        
+
         # Logs de votre app article
         'article': {
             'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': False,
         },
-        
+
         # Logs de votre app core
         'core': {
             'handlers': ['console'],
