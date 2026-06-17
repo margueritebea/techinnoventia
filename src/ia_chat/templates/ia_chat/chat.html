@@ -2,7 +2,7 @@
 {% block title %}IA Chat — TechInnoventia{% endblock %}
 {% block content %}
 <div class="h-[calc(100vh-3.5rem)] flex flex-col">
-  <div class="flex-1 flex max-w-6xl mx-auto w-full overflow-hidden" x-data="chatApp()" x-init="init()">
+  <div class="flex-1 flex max-w-6xl mx-auto w-full overflow-hidden" x-data="chatApp()">
     <!-- Sidebar -->
     <div class="w-64 lg:w-72 border-r border-slate-200 flex flex-col bg-white shrink-0 hidden md:flex">
       <div class="p-3 border-b border-slate-100">
@@ -146,6 +146,11 @@ document.addEventListener('alpine:init', () => {
 
     async init() {
       await this.loadConversations();
+      if (this.conversations.length > 0) {
+        this.connect(this.conversations[0].id);
+      } else {
+        this.connect(null);
+      }
     },
 
     async loadConversations() {
